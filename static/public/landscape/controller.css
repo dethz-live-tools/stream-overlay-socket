@@ -1,0 +1,118 @@
+html {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+img {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+
+body {
+  margin: 0;
+  padding: 0;
+
+  overflow: hidden;
+
+  width: 1920px;
+  height: 1080px;
+}
+
+.window {
+  overflow: hidden !important;
+  margin: 0.5rem !important;
+  padding: 0 !important;
+
+  .window-pane {
+    background: lime;
+    border: 2px solid black;
+    border-top: 0 !important;
+  }
+}
+
+#screen {
+  width: 1506px;
+  
+  position: fixed;
+  top: 0;
+  left: 0;
+  
+  z-index: 1;
+  
+  .window-pane {
+    height: 810px;
+    width: 100%;
+  }
+}
+
+#webcam {
+  width: 510px;
+
+  position: fixed;
+  top: 10px;
+  right: 10px;
+
+  z-index: 10;
+
+  .window-pane {
+    width: 100%;
+    height: 282px;
+  }
+}
+
+#countdown {
+  width: 480px;
+
+  position: fixed;
+  bottom: 0;
+  left: calc(1500px + 10px - 480px);
+  z-index: 3;
+
+  .window-pane {
+    background: #fff !important;
+    height: 128px;
+    overflow: hidden;
+  }
+}
+
+#playlist {
+  width: 240px;
+  margin: 0 !important;
+
+  position: fixed;
+  bottom: 0;
+  left: 0;
+
+  z-index: 3;
+
+}
+
+#avatar {
+  width: 300px;
+  height: 340px;
+
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  margin: 0 !important;
+
+  z-index: 3;
+
+  .window-pane {
+    background: #fff !important;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+#now-playing {
+  position: fixed;
+  bottom: 10px;
+  left: 300px;
+  z-index: 4;
+  width: 500px !important;
+
+  .window-pane {
+    width: 100% !important;
+    height: 230px !important;
+  }
+}

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Landscape Overlay</title>
+
+  <link rel="stylesheet" href="/src/css/system.css">
+
+  <link rel="stylesheet" href="./controller.css">
+  <link rel="stylesheet" href="/src/css/now-playing.css">
+</head>
+
+<body>
+  <div id="main">
+    <!-- Screen -->
+    <div class="window" id="screen">
+      <div class="title-bar">
+        <button aria-label="Close" class="close"></button>
+        <h1 class="title">Main Screen</h1>
+        <button aria-label="Resize" disabled class="hidden"></button>
+      </div>
+      <div class="separator"></div>
+
+      <div class="window-pane">
+
+      </div>
+    </div>
+
+    <!-- Webcam -->
+    <div class="window" id="webcam">
+      <div class="title-bar">
+        <button aria-label="Close" class="close"></button>
+        <h1 class="title">Webcam</h1>
+        <button aria-label="Resize" disabled class="hidden"></button>
+      </div>
+      <div class="separator"></div>
+
+      <div class="window-pane">
+      </div>
+    </div>
+
+    <!-- Playlist -->
+    <div class="window" id="playlist">
+      <div class="title-bar">
+        <button aria-label="Close" class="close"></button>
+        <h1 class="title">Playlist</h1>
+        <button aria-label="Resize" disabled class="hidden"></button>
+      </div>
+      <div class="separator"></div>
+      <div class="window-pane"></div>
+    </div>
+
+    <!-- Now Playing -->
+    <div id="now-playing" class="window">
+      <div class="title-bar">
+        <button aria-label="Close" class="close"></button>
+        <h1 class="title">Now Playing</h1>
+        <button aria-label="Resize" disabled class="hidden"></button>
+      </div>
+      <div class="separator"></div>
+      <div class="window-pane">
+        <div id="now-content"></div>
+      </div>
+    </div>
+
+    <!-- Countdown -->
+    <div id="countdown" class="window">
+      <div class="title-bar">
+        <button aria-label="Close" class="close"></button>
+        <h1 class="title">Countdown</h1>
+        <button aria-label="Resize" disabled class="hidden"></button>
+      </div>
+      <div class="separator"></div>
+      <div class="window-pane"></div>
+    </div>
+
+    <!-- Avatar -->
+    <div id="avatar" class="window">
+      <div class="title-bar">
+        <button aria-label="Close" class="close"></button>
+        <h1 class="title">Avatar</h1>
+        <button aria-label="Resize" disabled class="hidden"></button>
+      </div>
+      <div class="separator"></div>
+
+      <div class="window-pane"></div>
+    </div>
+  </div>
+
+  <!-- <script src="/src/js/now-playing.js"></script> -->
+  <script src="/src/js/socket.js"></script>
+  <!-- <script src="./render.js"></script> -->
+  <script src="./socketRender.js"></script>
+</body>
+
+</html>

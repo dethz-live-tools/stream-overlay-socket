@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview</title>
+
+  <style>
+    body {
+      background: rgb(36, 39, 58);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="main"></div>
+
+  <script>
+    const param = new URLSearchParams(window.location.search).get("id");
+    const dec = atob(param);
+
+    const socketConnector = () => {
+      const ws = new WebSocket(`ws://${dec}/ws`);
+
+      ws.onopen = () => {
+        console.log("Connected to WebSocket");
+      };
+
+      ws.onmessage = (event) => {
+        const msg = event.data;
+
+        if (msg !== 'spt: heartbeat') {
+          console.log(event.data);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log("Connection closed");
+      };
+
+      ws.onerror = (error) => {
+        console.log(`WebSocket error: ${error}`);
+      };
+
+      return ws;
+    };
+
+    socketConnector()
+  </script>
+</body>
+
+</html>

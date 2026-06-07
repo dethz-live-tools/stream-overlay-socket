@@ -1,0 +1,258 @@
+.main-container {
+  width: 100%;
+  height: 100dvh;
+
+  display: flex;
+  flex-direction: row;
+
+  #status {
+    width: 30%;
+    height: 100dvh;
+
+    border-right: 1px solid var(--ctp-surface-2);
+
+    .status-container {
+      display: flex;
+      flex-direction: column;
+
+      padding: 1rem;
+
+      p {
+        padding: 0;
+        margin: 0;
+      }
+    }
+  }
+
+  #controller {
+    width: 70%;
+    height: 100dvh;
+
+    overflow-y: auto;
+
+    display: flex;
+    align-items: start;
+    justify-content: start;
+  }
+
+  .controller-container {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    padding: 1rem;
+
+    #spotify-controller {
+      #spt-login {
+        background: var(--ctp-green);
+        color: var(--ctp-base);
+
+        border: 0;
+
+        padding: .5rem .75rem;
+
+        border-radius: 1rem;
+        font-weight: bold;
+
+        &:hover {
+          cursor: pointer;
+        }
+      }
+
+      #spt-dash {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+
+        button {
+          width: 100%;
+
+          padding: .5rem 1rem;
+          border-radius: .5rem;
+          font-size: 15px;
+
+          color: var(--ctp-base);
+          background: var(--ctp-sapphire);
+          border: 0;
+
+          flex: 1;
+
+          &:hover {
+            cursor: pointer;
+            opacity: .6;
+          }
+
+          &#spt-reauth {
+            flex: 4 !important;
+          }
+        }
+
+        #spt-logout, #spt-reauth {
+          background: var(--ctp-red);
+        }
+
+        .spt-button-controller {
+          width: 50%;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+
+          #spt-player-status {
+            width: 18rem;
+
+            background: var(--ctp-surface-2);
+            
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+
+            padding: 1rem;
+            border-radius: 1rem;
+
+            div {
+              width: 100%;
+              display: flex;
+              flex-direction: column;
+              gap: .5rem;
+            }
+
+            hr {
+              width: 80%;
+              margin: auto 0;
+            }
+
+            #current-play {
+              flex-direction: row !important;
+
+              img {
+                width: 5rem;
+                aspect-ratio: 1/1;
+              }
+
+              div {
+                display: flex;
+                flex-direction: column;
+
+                p {
+                  width: 100%;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                }
+              }
+            }
+            
+            #device {
+              gap: 1rem;
+
+              p {
+                width: 100%;
+                margin: 0;
+
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+            }
+
+            #player-state {
+              flex-direction: row;
+              gap: 1rem;
+            }
+          }
+
+          .player-controller, form, .volume-controller, .state-controller {
+            width: 18rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: space-between;
+            padding: 0 1rem;
+          }
+
+          input {
+            width: 100%;
+
+            padding: .5rem .75rem;
+            border-radius: .5rem;
+            border: 1px solid var(--ctp-surface-2);
+            
+            font-size: 15px;
+            color: var(--ctp-text);
+            background: var(--ctp-surface-2);
+            
+            outline: 0;
+            flex: 4;
+
+            &:hover, &:focus {
+              border-color: var(--ctp-sapphire);
+            }
+          }
+        }
+
+        .spt-queue-controller {
+          width: 100%;
+
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+
+          padding: 0 1rem;
+
+          button {
+            flex: 0 !important;
+          }
+
+          #spt-queue {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+
+            align-items: center;
+            gap: 1rem;
+
+            .queue-item {
+              width: 18rem;
+              display: flex;
+              flex-direction: row;
+              align-items: center;
+              gap: 1rem;
+
+              padding: .5rem;
+              border-radius: .5rem;
+
+              background: var(--ctp-surface-2);
+
+              img {
+                width: 3rem;
+                aspect-ratio: 1/1;
+              }
+
+              div {
+                width: 10rem;
+                display: flex;
+                flex-direction: column;
+
+                p {
+                  width: 100%;
+                  margin: 0;
+                  padding: 0;
+
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                }
+              }
+            }
+          }
+        }
+      }      
+    }
+  }
+}
+
+.hidden {
+  display: none;
+}

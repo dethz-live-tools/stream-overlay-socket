@@ -1,0 +1,106 @@
+html {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+img {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+
+  overflow: hidden;
+
+  width: 1920px;
+  height: 1080px;
+}
+
+.window {
+  overflow: hidden !important;
+  margin: 0.5rem !important;
+  padding: 0 !important;
+
+  .window-pane {
+    background: lime;
+    border: 2px solid black;
+    border-top: 0 !important;
+  }
+}
+
+#screen {
+  width: 1050px;
+
+  position: fixed;
+  top: 240px;
+  left: 0px;
+
+  z-index: 1;
+
+  .window-pane {
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 16/8.5 !important;
+  }
+}
+
+#webcam {
+  width: 730px;
+
+  position: fixed;
+  right: 10px;
+  top: calc(1000px * 9 / 16 + 240px + 70px);
+
+  z-index: 1;
+
+  .window-pane {
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 16/8;
+  }
+}
+
+#playlist {
+  width: 240px;
+  margin: 0 !important;
+
+  position: fixed;
+  top: calc(1000px * 9 / 16 + 240px + 30px + 100px + 80px);
+  left: 60px;
+
+  z-index: 3;
+}
+
+#now-playing {
+  width: 500px;
+  margin: 0 !important;
+
+  position: fixed;
+  top: calc(1000px * 9 / 16 + 240px + 30px + 100px + 80px + 250px);
+  right: 10px;
+
+  z-index: 3;
+
+  .window-pane {
+    height: 200px;
+
+    img {
+      width: 170px !important;
+    }
+  }
+}
+
+#countdown {
+  width: 480px;
+
+  position: fixed;
+  top: calc(1000px * 9 / 16 + 240px - 20px);
+  left: 30px;
+  z-index: 3;
+
+  .window-pane {
+    background: #fff !important;
+    height: 128px;
+    overflow: hidden;
+  }
+}
