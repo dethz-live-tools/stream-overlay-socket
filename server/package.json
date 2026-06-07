@@ -2,7 +2,8 @@
   "name": "server",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
-    "build:binary": "bun build --compile --outfile server src/index.ts"
+    "build:all": "bun run build.ts",
+    "build:binary": "bun build --compile --outfile ../build/server src/index.ts"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
