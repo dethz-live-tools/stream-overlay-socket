@@ -38,10 +38,16 @@ const controllerFrame = () => {
 const spotifyFrame = (state) => {
   if (state) {
     document.querySelector("#spotify-controller").innerHTML =
-      `<button id="spt-login">Login with Spotify</button>
-<div>
-  <p>If you already logged in and some error occurred</p>
-  <button id="spt-reauth">Re-Initialized Frame</button>
+      `<h3 id="spt-header">
+  Spotify Controller
+</h3>
+
+<div id="spt-dash">
+  <button id="spt-login">Login with Spotify</button>
+  <div>
+    <p>If you already logged in and some error occurred</p>
+    <button id="spt-reauth">Re-Initialized Frame</button>
+  </div>
 </div>`;
 
     document.querySelector("#spt-login").addEventListener("click", async () => {
@@ -63,7 +69,11 @@ const spotifyFrame = (state) => {
       });
   } else {
     document.querySelector("#spotify-controller").innerHTML =
-      `<div id="spt-dash">
+      `<h3 id="spt-header">
+  Spotify Controller
+</h3>
+
+<div id="spt-dash" class="hidden">
   <div class="spt-button-controller">
     <div id="spt-current-play"></div>
     

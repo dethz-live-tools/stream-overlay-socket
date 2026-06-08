@@ -31,7 +31,9 @@
         const msg = event.data;
 
         if (msg !== 'spt: heartbeat') {
-          console.log(event.data);
+          if (!msg.startsWith('spt: ')) {
+            console.log(msg);
+          }
         }
       };
 
