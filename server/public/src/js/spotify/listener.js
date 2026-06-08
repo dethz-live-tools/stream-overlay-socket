@@ -43,4 +43,6 @@ const spotifyListener = () => {
     ws.send(`spt: search -- ${context}`);
     ws.send("spt: pulling");
   });
+
+  animationFunction();
 };

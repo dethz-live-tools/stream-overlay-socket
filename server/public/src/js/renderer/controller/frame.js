@@ -112,6 +112,10 @@ const spotifyFrame = (state) => {
   </div>
 </div>`;
 
+    if (localStorage.getItem("spt-hide") === "false") {
+      document.querySelector("#spt-dash").classList.remove("hidden");
+    }
+
     const timeClass = document.querySelector("p#time").classList;
 
     if (timeClass.contains("hidden")) {
