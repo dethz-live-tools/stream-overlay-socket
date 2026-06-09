@@ -4,8 +4,7 @@ import { ServerWebSocket } from "bun";
 
 import { Greeting } from "./modules/greet";
 import { spotifyHandler, spotifyCleanup } from "./modules/spotify";
-
-import { server } from "../../index";
+import { tiktokHandler } from "./modules/tiktok";
 
 const ws = new Hono();
 
@@ -29,6 +28,8 @@ ws.get(
 
         if (msg.startsWith("spt: ")) {
           await spotifyHandler(msg, rawWS);
+        } else if (msg.startsWith("tt: ")) {
+          await tiktokHandler(msg, rawWS);
         } else {
           rawWS.publish(systemTopic, msg);
         }
