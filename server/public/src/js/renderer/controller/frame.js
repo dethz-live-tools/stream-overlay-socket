@@ -73,7 +73,7 @@ const spotifyFrame = (state) => {
   Spotify Controller
 </h3>
 
-<div id="spt-dash" class="hidden">
+<div id="spt-dash" class="hidden isLogin">
   <div class="spt-button-controller">
     <div id="spt-current-play"></div>
     

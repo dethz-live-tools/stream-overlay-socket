@@ -64,7 +64,11 @@
       #spt-dash {
         width: 100%;
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
+
+        &.isLogin {
+          flex-direction: row;
+        }
 
         button {
           width: 100%;
