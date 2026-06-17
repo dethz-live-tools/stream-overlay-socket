@@ -33,6 +33,7 @@ const socketConnector = (ip) => {
 const controllerRenderer = (ip) => {
   controllerFrame();
   spotifyInit();
+  tiktokInitialElement();
 
   socketConnector(ip);
 };

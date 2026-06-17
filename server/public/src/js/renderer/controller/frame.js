@@ -24,6 +24,20 @@ const controllerFrame = () => {
       <div id="socket-controller">
         
       </div>
+
+      <div id="tiktok-controller">
+        <h2 id="tiktok-header">Tiktok Chat & Utilities</h2>
+        <div id="tiktok-container" ${window.localStorage.getItem("tt-hide") === "false" ? 'class=""' : 'class="hidden"'}>
+          
+        </div>
+      </div>
+      
+      <div id="tts-controller">
+        <h2 id="tts-header">TTS Config</h2>
+        <div id="tts-container" ${window.localStorage.getItem("tts-hide") === "false" ? 'class=""' : 'class="hidden"'}>
+          
+        </div>
+      </div>
       
       <div id="spotify-controller">
         nothing to load right now

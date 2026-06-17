@@ -300,9 +300,67 @@
         }
       }
     }
+    
+    #tiktok-container {
+      form {
+        input {
+          background: var(--ctp-crust);
+          border: 1px solid var(--ctp-surface-2);
+          padding: .5rem;
+          border-top-left-radius: 1rem;
+          border-bottom-left-radius: 1rem;
+          color: var(--ctp-text);
+
+          &:focus,
+          &:hover {
+            border-color: var(--ctp-sapphire);
+            outline: none;
+          }
+        }
+
+        button {
+          border: 0;
+          background: var(--ctp-green);
+          color: var(--ctp-base);
+
+          padding: .5rem .75rem;
+          border-top-right-radius: 1rem;
+          border-bottom-right-radius: 1rem;
+
+          &:hover {
+            cursor: pointer;
+            opacity: .6;
+          }
+        }
+      }
+
+      #tt-dash {
+        display: flex;
+        flex-direction: row;
+
+        #tt-chat-container {
+          width: 50%;
+        }
+
+        #tt-gift-container {
+          width: 50%;
+        }
+      }
+    }
   }
 }
 
 .hidden {
   display: none !important;
+}
+
+@media only screen and (max-width: 800px) {
+  #tt-dash {
+    flex-direction: column !important;
+  }
+
+  #tt-chat-container,
+  #tt-gift-container {
+    width: 100% !important;
+  }
 }
