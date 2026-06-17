@@ -1,0 +1,3 @@
+const consoleController = (isOnline) => {
+  logAnimationFunction();
+};

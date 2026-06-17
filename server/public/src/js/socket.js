@@ -17,6 +17,8 @@ const socketConnector = (ip) => {
 
     if (msg.startsWith("spt: ")) {
       spotifyCommandHandler(msg);
+    } else if (msg.startsWith("log: ")) {
+      logHandler(msg);
     } else {
       console.log(msg);
     }

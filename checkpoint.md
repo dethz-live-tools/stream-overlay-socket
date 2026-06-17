@@ -23,3 +23,6 @@
 
 - [ ] update check
 - [ ] auto update
+- [ ] packed to 1 apps
+  - [ ] packed controller to render in hono
+  - [ ] added public folder to render custom static page

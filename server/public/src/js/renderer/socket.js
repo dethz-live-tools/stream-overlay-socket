@@ -14,6 +14,8 @@ const socketOnline = () => {
 
   document.querySelector("#socket-controller").innerHTML = element;
 
+  consoleController(true);
+
   if (conListener === false) {
     document
       .querySelector("#socket-message")
@@ -38,6 +40,8 @@ const socketOffline = () => {
 </div>`;
 
   document.querySelector("#socket-controller").innerHTML = element;
+
+  consoleController(false);
 
   if (disListener === false) {
     document.querySelector("#reconnect").addEventListener("click", () => {

@@ -44,5 +44,5 @@ const spotifyListener = () => {
     ws.send("spt: pulling");
   });
 
-  animationFunction();
+  spotifyAnimationFunction();
 };

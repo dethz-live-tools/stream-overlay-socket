@@ -28,6 +28,13 @@ const controllerFrame = () => {
       <div id="spotify-controller">
         nothing to load right now
       </div>
+
+      <div id="log-controller">
+        <h2 id="console-header">Console</h2>
+        <div id="console-container" ${window.localStorage.getItem("log-hide") === "false" ? 'class=""' : 'class="hidden"'}>
+          <div id="log-box"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>`;
