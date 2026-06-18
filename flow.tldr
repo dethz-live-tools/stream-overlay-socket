@@ -521,9 +521,9 @@
 			"typeName": "shape"
 		},
 		{
-			"x": -120.8384462349635,
-			"y": 420.18428088455505,
-			"z": 0.7977737989257571,
+			"x": 682.5642198909582,
+			"y": -973.438623760487,
+			"z": 0.9466684369553847,
 			"meta": {},
 			"id": "camera:page:page",
 			"typeName": "camera"
@@ -968,10 +968,8 @@
 		{
 			"editingShapeId": null,
 			"croppingShapeId": null,
-			"selectedShapeIds": [
-				"shape:J9H2bixsnbvFARC_cmttW"
-			],
-			"hoveredShapeId": "shape:c6NBOhKnPyOjAA5MSACfu",
+			"selectedShapeIds": [],
+			"hoveredShapeId": "shape:pM6i5F6WZCT-nOt2Km07x",
 			"erasingShapeIds": [],
 			"hintingShapeIds": [],
 			"focusedGroupId": null,
@@ -2201,7 +2199,7 @@
 			"brush": null,
 			"scribbles": [],
 			"cursor": {
-				"type": "default",
+				"type": "cross",
 				"rotation": 0
 			},
 			"isFocusMode": false,
@@ -2211,7 +2209,7 @@
 			"screenBounds": {
 				"x": 0,
 				"y": 0,
-				"w": 1024,
+				"w": 845,
 				"h": 903
 			},
 			"insets": [
@@ -2222,13 +2220,13 @@
 			],
 			"zoomBrush": null,
 			"isGridMode": false,
-			"isPenMode": false,
+			"isPenMode": true,
 			"chatMessage": "",
 			"isChatting": false,
 			"highlightedUserIds": [],
 			"isFocused": true,
 			"devicePixelRatio": 1,
-			"isCoarsePointer": false,
+			"isCoarsePointer": true,
 			"isHoveringCanvas": true,
 			"openMenus": [],
 			"isChangingStyle": false,

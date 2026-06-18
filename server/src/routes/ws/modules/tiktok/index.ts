@@ -2,6 +2,8 @@ import { ServerWebSocket } from "bun";
 import { WebcastEvent } from "tiktok-live-connector";
 
 import { tiktokClient } from "../../../../modules/tiktok";
+import { chatParser } from "./modules/chat";
+import { giftParser } from "./modules/gift";
 
 const handler = (data: any) => {};
 
@@ -24,6 +26,7 @@ export const tiktokHandler = async (msg: string, ws: ServerWebSocket) => {
         ws.send(
           `log: success -- Connected to tiktok-live on room ID ${state.roomId}`,
         );
+        ws.send("tt: connected");
         isConnected = true;
       })
       .catch((err) => {
@@ -33,11 +36,11 @@ export const tiktokHandler = async (msg: string, ws: ServerWebSocket) => {
       });
 
     tiktok.client.on(WebcastEvent.CHAT, (data) => {
-      ws.send(JSON.stringify(data));
+      ws.send("tt: chat " + JSON.stringify(chatParser(data)));
     });
 
     tiktok.client.on(WebcastEvent.GIFT, (data) => {
-      ws.send(JSON.stringify(data));
+      ws.send("tt: gift " + JSON.stringify(giftParser(data)));
     });
   } else if (cmd === "disconnect") {
     if (isConnected && tiktok !== null) {
@@ -45,6 +48,7 @@ export const tiktokHandler = async (msg: string, ws: ServerWebSocket) => {
       tiktok = null;
       isConnected = false;
       ws.send("log: success -- Disconnected from tiktok-live");
+      ws.send("tt: disconnected");
     } else {
       ws.send("log: error -- Not connected to tiktok-live");
     }
