@@ -12,6 +12,7 @@
     - [x] queue
 - [ ] Titkok
   - [ ] Chat
+    - [ ] show chat in dashboard
   - [ ] TTS
   - [ ] Overlay alert
   - [ ] Spotify Bot -> added song for approved user :3
@@ -26,3 +27,6 @@
 - [ ] packed to 1 apps
   - [ ] packed controller to render in hono
   - [ ] added public folder to render custom static page
+
+- [ ] debug
+  - [ ] Spotify parsing data seem got some error in [spotify based controller](./server/src/modules/spotify/players/index.ts#L46-L50)
