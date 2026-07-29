@@ -35,7 +35,7 @@ cp src/modules/config.example.ts src/modules/config.ts
 Edit `src/modules/config.ts`:
 
 ```ts
-export const TEST_VALUE = "build success!";
+export const TEST_VALUE = "build success!"; // just a test value ignore it :3
 
 export const SPOTIFY_CLIENT_ID = "your_spotify_client_id";
 export const SPOTIFY_CLIENT_SECRET = "your_spotify_client_secret";

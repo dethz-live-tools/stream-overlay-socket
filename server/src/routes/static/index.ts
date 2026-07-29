@@ -1,34 +1,22 @@
-import { Hono } from "hono";
-import { serveStatic } from "hono/bun";
+// Controller
+import controllerPage from "../../../public/controller/index.html";
 
-const staticPath = new Hono();
+// Spotify
+import spotifyAuthPage from "../../../public/spotify/auth/index.html";
+import spotifyCallbackPage from "../../../public/spotify/callback/index.html";
+import spotifySessionPage from "../../../public/spotify/session/index.html";
 
-staticPath.get(
-  "/controller/*",
-  serveStatic({
-    root: "public",
-    onNotFound: (path, c) => {
-      console.log(`${path} is not found, you access ${c.req.path}`);
-    },
-  }),
-);
-staticPath.get(
-  "/spotify/*",
-  serveStatic({
-    root: "public",
-    onNotFound: (path, c) => {
-      console.log(`${path} is not found, you access ${c.req.path}`);
-    },
-  }),
-);
-staticPath.get(
-  "/src/*",
-  serveStatic({
-    root: "public",
-    onNotFound: (path, c) => {
-      console.log(`${path} is not found, you access ${c.req.path}`);
-    },
-  }),
-);
+const controllerRoutes = {
+  "/controller": controllerPage,
+};
 
-export default staticPath;
+const spotifyRoutes = {
+  "/spotify/auth": spotifyAuthPage,
+  "/spotify/callback": spotifyCallbackPage,
+  "/spotify/session": spotifySessionPage,
+};
+
+export const staticRoutes = {
+  ...controllerRoutes,
+  ...spotifyRoutes,
+};
