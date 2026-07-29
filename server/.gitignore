@@ -8,4 +8,8 @@ DS_Store
 # using instead of .env
 config.ts
 
+# build output
 build
+
+# another static overlay
+static

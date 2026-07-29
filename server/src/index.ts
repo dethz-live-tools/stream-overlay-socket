@@ -3,8 +3,15 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { websocket } from "hono/bun";
 
+import fs from "node:fs";
+
 import routes from "./routes";
 import { staticRoutes } from "./routes/static";
+
+// Check that is `static` directory exist
+if (!fs.existsSync("static")) {
+  fs.mkdirSync("static");
+}
 
 const app = new Hono();
 app.use("*", cors());
@@ -19,6 +26,8 @@ export const server = Bun.serve({
     "/ws": app.fetch,
     "/api/*": app.fetch,
     "/core/src/*": app.fetch,
+    "/static": app.fetch,
+    "/static/*": app.fetch,
 
     ...staticRoutes,
 

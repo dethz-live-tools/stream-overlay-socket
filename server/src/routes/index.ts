@@ -1,16 +1,15 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 
-import * as config from "../modules/config";
+import fs from "node:fs";
 
 import ws from "./ws";
 import api from "./api";
-// import staticPath from "./static";
+import { staticListingPage } from "./staticPage";
 
 const routes = new Hono();
 
 routes.get("/", (c) => {
-  console.log(config.TEST_VALUE);
   return c.text("server loaded");
 });
 
@@ -25,11 +24,23 @@ routes.get(
   }),
 );
 
+routes.get("/static", (c) => {
+  // Directory Listing
+  const dirList = fs.readdirSync("static");
+
+  return c.html(staticListingPage(dirList));
+});
+
 routes.get(
   "/static/*",
   serveStatic({
     root: "static",
-    // rewriteRequestPath: (path) => path.replace("/static", "/static"),
+    rewriteRequestPath: (path) => {
+      let outPath = path.replace("/static", "");
+      // console.log(path, " -> ", outPath);
+
+      return outPath;
+    },
     onNotFound: (path, c) => {
       console.log(`${path} is not found, you access ${c.req.path}`);
     },
