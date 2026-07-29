@@ -1,6 +1,9 @@
 # checkPoint!!
 
-- [] Control Panel
+- [ ] Backend
+  - [x] change `.env` to `config.ts`
+
+- [ ] Control Panel
   - [x] spotify controller
     - [x] player controller
     - [x] user session controller
