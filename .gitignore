@@ -1,0 +1,15 @@
+# deps
+node_modules/
+.DS_Store
+
+.env
+.env.local
+
+# using instead of .env
+config.ts
+
+# build output
+build
+
+# another static overlay
+static

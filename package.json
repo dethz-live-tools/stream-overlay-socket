@@ -1,0 +1,18 @@
+{
+  "name": "server",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "build:all": "bun run build.ts",
+    "build:box": "bun run build-box.ts",
+    "build:binary": "bun build --compile --outfile ../build/server src/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "hono": "^4.12.23",
+    "tiktok-live-connector": "^2.1.1-beta1",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
