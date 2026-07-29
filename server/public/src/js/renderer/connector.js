@@ -1,11 +1,11 @@
 // deno-lint-ignore-file
-const connector = (ip) => {
+var connector = (ip) => {
   const encode = btoa(ip);
   window.location.href = `${window.location.origin}/controller/?id=${encode}`;
 };
 
-const connectRenderer = () => {
-  document.head.innerHTML += `<link rel="stylesheet" href="/src/css/connector.css">`;
+var connectRenderer = () => {
+  document.head.innerHTML += `<link rel="stylesheet" href="/core/src/css/connector.css">`;
 
   document.querySelector("#main").innerHTML += `<div class="main-container">
   <h1>Web Socket Controller</h1>
@@ -26,3 +26,5 @@ const connectRenderer = () => {
     connector(ip);
   });
 };
+
+window.connectRenderer = connectRenderer;

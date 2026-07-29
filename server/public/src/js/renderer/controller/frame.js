@@ -1,6 +1,6 @@
 // deno-lint-ignore-file
-const controllerFrame = () => {
-  document.head.innerHTML += `<link rel="stylesheet" href="/src/css/controller.css">`;
+var controllerFrame = () => {
+  document.head.innerHTML += `<link rel="stylesheet" href="/core/src/css/controller.css">`;
 
   const element = `<div class="main-container">
   <div id="status">
@@ -56,7 +56,7 @@ const controllerFrame = () => {
   document.querySelector("#main").innerHTML = element;
 };
 
-const spotifyFrame = (state) => {
+var spotifyFrame = (state) => {
   if (state) {
     document.querySelector("#spotify-controller").innerHTML =
       `<h3 id="spt-header">
@@ -147,3 +147,5 @@ const spotifyFrame = (state) => {
     startTokenCountdown(token);
   }
 };
+window.controllerFrame = controllerFrame;
+window.spotifyFrame = spotifyFrame;

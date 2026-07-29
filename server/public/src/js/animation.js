@@ -1,4 +1,4 @@
-const spotifyAnimationFunction = () => {
+var spotifyAnimationFunction = () => {
   document.querySelector("#spt-header").addEventListener("click", () => {
     const target = document.querySelector("#spt-dash");
 
@@ -12,7 +12,7 @@ const spotifyAnimationFunction = () => {
   });
 };
 
-const logAnimationFunction = () => {
+var logAnimationFunction = () => {
   document.querySelector("#console-header").addEventListener("click", () => {
     const target = document.querySelector("#console-container");
 
@@ -49,3 +49,5 @@ const logAnimationFunction = () => {
     }
   });
 };
+window.spotifyAnimationFunction = spotifyAnimationFunction;
+window.logAnimationFunction = logAnimationFunction;

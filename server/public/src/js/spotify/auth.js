@@ -1,10 +1,10 @@
-const param = new URLSearchParams(window.location.search);
+var param = new URLSearchParams(window.location.search);
 
-const err = param.get("error");
-const code = param.get("code");
-const state = param.get("state");
+var err = param.get("error");
+var code = param.get("code");
+var state = param.get("state");
 
-const tokenFetch = async () => {
+var tokenFetch = async () => {
   let endpoint = atob(state);
 
   if (endpoint.includes("localhost:") || endpoint.includes("127.0.0.1:")) {

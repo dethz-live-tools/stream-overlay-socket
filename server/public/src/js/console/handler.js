@@ -1,4 +1,4 @@
-const logHandler = (msg) => {
+var logHandler = (msg) => {
   const logData = msg.replace("log: ", "");
 
   const errState = logData.startsWith("error -- ");
@@ -13,3 +13,4 @@ const logHandler = (msg) => {
 
   document.querySelector("#log-box").innerHTML = newMessage + oldElement;
 };
+window.logHandler = logHandler;

@@ -2,7 +2,7 @@
 var conListener = false;
 var disListener = false;
 
-const socketOnline = () => {
+var socketOnline = () => {
   const element = `<form id="socket-message">
   <input type="text" id="message" name="message" placeholder="message">
   <button type="submit">Send</button>
@@ -34,7 +34,7 @@ const socketOnline = () => {
   }
 };
 
-const socketOffline = () => {
+var socketOffline = () => {
   const element = `<div class="socket-button-controller">
   <button id="reconnect">Reconnect</button>
 </div>`;
@@ -52,7 +52,7 @@ const socketOffline = () => {
   }
 };
 
-const socketController = (online) => {
+var socketController = (online) => {
   if (online) {
     document.querySelector("#socket-status").innerHTML = "🟢";
     disListener = false;
@@ -63,3 +63,6 @@ const socketController = (online) => {
     socketOffline();
   }
 };
+window.socketOnline = socketOnline;
+window.socketOffline = socketOffline;
+window.socketController = socketController;

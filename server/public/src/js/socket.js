@@ -1,7 +1,7 @@
 // deno-lint-ignore-file
 var ws;
 
-const socketConnector = (ip) => {
+var socketConnector = (ip) => {
   ws = new WebSocket(`ws://${ip}/ws`);
 
   ws.onopen = () => {
@@ -30,10 +30,13 @@ const socketConnector = (ip) => {
   };
 };
 
-const controllerRenderer = (ip) => {
+var controllerRenderer = (ip) => {
   controllerFrame();
   spotifyInit();
   tiktokInitialElement();
 
   socketConnector(ip);
 };
+
+window.controllerRenderer = controllerRenderer;
+window.socketConnector = socketConnector;

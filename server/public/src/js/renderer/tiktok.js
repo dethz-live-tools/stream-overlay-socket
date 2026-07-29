@@ -1,4 +1,4 @@
-const tiktokInitialElement = (isLogin) => {
+var tiktokInitialElement = (isLogin) => {
   if (!isLogin) {
     document.querySelector("#tiktok-container").innerHTML =
       `<form id="tiktok-connect">
@@ -37,3 +37,4 @@ const tiktokInitialElement = (isLogin) => {
     });
   }
 };
+window.tiktokInitialElement = tiktokInitialElement;

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file
-const queryParam = new URLSearchParams(window.location.search);
+var queryParam = new URLSearchParams(window.location.search);
 
-const id = queryParam.get("id");
+var id = queryParam.get("id");
 
-if (id !== undefined && id !== null) controllerRenderer(atob(id));
-else connectRenderer();
+if (id !== undefined && id !== null) window.controllerRenderer(atob(id));
+else window.connectRenderer();

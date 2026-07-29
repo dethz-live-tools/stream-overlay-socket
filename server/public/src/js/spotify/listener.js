@@ -1,9 +1,9 @@
-const playerController = (state) => {
+var playerController = (state) => {
   ws.send(`spt: player -- ${state}`);
   ws.send(`spt: player -- player`);
 };
 
-const spotifyListener = () => {
+var spotifyListener = () => {
   const buttonList = [
     "#spt-previous",
     "#spt-next",
@@ -46,3 +46,5 @@ const spotifyListener = () => {
 
   spotifyAnimationFunction();
 };
+window.playerController = playerController;
+window.spotifyListener = spotifyListener;

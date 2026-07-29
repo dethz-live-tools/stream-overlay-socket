@@ -1,6 +1,6 @@
 var player = null;
 
-const spotifyCommandHandler = (msg) => {
+var spotifyCommandHandler = (msg) => {
   const cmd = msg.replace("spt: ", "");
 
   if (cmd.startsWith("NEW TOKEN ")) {
@@ -25,3 +25,4 @@ const spotifyCommandHandler = (msg) => {
     spotifyInit();
   }
 };
+window.spotifyCommandHandler = spotifyCommandHandler;

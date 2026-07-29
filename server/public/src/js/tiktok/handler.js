@@ -1,4 +1,4 @@
-const tiktokHandler = (msg) => {
+var tiktokHandler = (msg) => {
   const command = msg.replace("tt: ", "");
 
   if (command === "connected" || command === "disconnected") {
@@ -13,3 +13,4 @@ const tiktokHandler = (msg) => {
     console.log(msg);
   }
 };
+window.tiktokHandler = tiktokHandler;

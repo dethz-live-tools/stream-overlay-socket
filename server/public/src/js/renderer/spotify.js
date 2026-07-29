@@ -4,7 +4,7 @@ var spt_timeout = null;
 
 var did = null;
 
-const spotifyRenderer = (state) => {
+var spotifyRenderer = (state) => {
   if (state) {
     document.querySelector("#spotify-status").innerHTML = "🔴";
   } else {
@@ -14,7 +14,7 @@ const spotifyRenderer = (state) => {
   spotifyFrame(state);
 };
 
-const spotifyInit = () => {
+var spotifyInit = () => {
   const parsedToken = JSON.parse(
     window.sessionStorage.getItem("spotify_token"),
   );
@@ -28,14 +28,14 @@ const spotifyInit = () => {
   spotifyRenderer(token === null);
 };
 
-const stopTokenCountdown = () => {
+var stopTokenCountdown = () => {
   if (spt_timeout !== null) {
     clearInterval(spt_timeout);
     spt_timeout = null;
   }
 };
 
-const startTokenCountdown = (token) => {
+var startTokenCountdown = (token) => {
   if (spt_timeout !== null) {
     stopTokenCountdown();
   }
@@ -61,7 +61,7 @@ const startTokenCountdown = (token) => {
   }, 1000);
 };
 
-const spotifyPlayerRenderer = (data) => {
+var spotifyPlayerRenderer = (data) => {
   const playerElement = document.querySelector("#spt-current-play");
   const playElement = document.querySelector("#spt-play");
 
@@ -140,7 +140,7 @@ const spotifyPlayerRenderer = (data) => {
     });
 };
 
-const spotifyQueueRenderer = (data) => {
+var spotifyQueueRenderer = (data) => {
   const queueElement = document.querySelector("#spt-queue");
   var queueItem = "";
 
@@ -167,3 +167,10 @@ const spotifyQueueRenderer = (data) => {
 
   queueElement.innerHTML = queueItem;
 };
+window.token = token;
+window.spotifyRenderer = spotifyRenderer;
+window.spotifyInit = spotifyInit;
+window.stopTokenCountdown = stopTokenCountdown;
+window.startTokenCountdown = startTokenCountdown;
+window.spotifyPlayerRenderer = spotifyPlayerRenderer;
+window.spotifyQueueRenderer = spotifyQueueRenderer;
