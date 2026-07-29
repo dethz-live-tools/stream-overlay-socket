@@ -3,6 +3,7 @@
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "build:all": "bun run build.ts",
+    "build:box": "bun run build-box.ts",
     "build:binary": "bun build --compile --outfile ../build/server src/index.ts"
   },
   "dependencies": {
