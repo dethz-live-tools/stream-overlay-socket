@@ -1,5 +1,7 @@
-const client_id = process.env.SPOTIFY_CLIENT_ID;
-const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+import * as config from "../../modules/config";
+
+const client_id = config.SPOTIFY_CLIENT_ID;
+const client_secret = config.SPOTIFY_CLIENT_SECRET;
 
 export const refreshAccessToken = async (refresh_token: string) => {
   const paramsObj = {

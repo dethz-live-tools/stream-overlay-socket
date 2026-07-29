@@ -1,8 +1,10 @@
-import { ISpotifyToken } from "../interfaces/spotify/token.interface.ts";
+import { ISpotifyToken } from "../interfaces/spotify/token.interface";
 
-const client_id = process.env.SPOTIFY_CLIENT_ID;
-const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
-// const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
+import * as config from "../../modules/config";
+
+const client_id = config.SPOTIFY_CLIENT_ID;
+const client_secret = config.SPOTIFY_CLIENT_SECRET;
+// const redirect_uri = config.SPOTIFY_REDIRECT_URI;
 
 const redirect_uri = "http://127.0.0.1:3000/spotify/callback/";
 

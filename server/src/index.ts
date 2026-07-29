@@ -11,7 +11,7 @@ app.use("*", cors());
 app.route("/", routes);
 
 export const server = Bun.serve({
-  port: Number(process.env.PORT) || 3000,
+  port: Number(Bun.env.PORT) || 3000,
   websocket,
   fetch: app.fetch,
 });
