@@ -13,3 +13,6 @@ build
 
 # another static overlay
 static
+
+# cache
+.bun-cache
