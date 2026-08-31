@@ -6,7 +6,6 @@ import { websocket } from "hono/bun";
 import fs from "node:fs";
 
 import routes from "./routes";
-import { staticRoutes } from "./routes/static";
 
 // Check that is `static` directory exist
 if (!fs.existsSync("static")) {
@@ -25,11 +24,11 @@ export const server = Bun.serve({
     "/": app.fetch,
     "/ws": app.fetch,
     "/api/*": app.fetch,
-    "/core/src/*": app.fetch,
+    "/spotify/*": app.fetch,
+    "/controller": app.fetch,
+    "/core/*": app.fetch,
     "/static": app.fetch,
     "/static/*": app.fetch,
-
-    ...staticRoutes,
 
     "/*": () => new Response("not found", { status: 404 }),
   },

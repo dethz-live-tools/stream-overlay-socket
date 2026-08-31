@@ -25,8 +25,8 @@
   - [x] fix build config to easily to config
   - [x] packed file of everyOS to zip file with public web files
 
-- [ ] update check
-- [ ] auto update
+- [x] update check
+- [x] auto update
 - [ ] packed to 1 apps
   - [ ] packed controller to render in hono
   - [ ] added public folder to render custom static page

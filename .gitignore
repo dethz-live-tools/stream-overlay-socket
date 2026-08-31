@@ -15,5 +15,9 @@ build
 static
 !src/routes/static
 
+# core modules
+core
+
 # cache
 .bun-cache
+test

@@ -6,7 +6,7 @@ import { refreshAccessToken } from "../../../../modules/spotify/refresh";
 import { ISpotifyQueue } from "../../../../modules/interfaces/spotify/queue.interface";
 import { spotifySearchHandler } from "./functions/search";
 import { playerHandler } from "./functions/player";
-import { server } from "../../../..";
+
 
 interface SpotifyConnectionState {
   token: ISpotifyToken;
@@ -93,7 +93,7 @@ const init = async (ws: ServerWebSocket) => {
           stockData.queue[0].id !== data.queue[0].id
         ) {
           stockData = data;
-          server.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
+          ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
         }
       } else {
         stockData = data;
@@ -168,7 +168,7 @@ export const spotifyHandler = async (msg: string, ws: ServerWebSocket) => {
           const data = await queueFetcher(conn.token);
           if (data !== null) {
             stockData = data;
-            server.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
+            ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
           }
         }
       } else if (msg === "spt: pull token") {
