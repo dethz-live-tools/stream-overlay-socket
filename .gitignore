@@ -13,6 +13,7 @@ build
 
 # another static overlay
 static
+!src/routes/static
 
 # cache
 .bun-cache
