@@ -6,7 +6,7 @@ import { refreshAccessToken } from "../../../../modules/spotify/refresh";
 import { ISpotifyQueue } from "../../../../modules/interfaces/spotify/queue.interface";
 import { spotifySearchHandler } from "./functions/search";
 import { playerHandler } from "./functions/player";
-
+import { server } from "../../../..";
 
 interface SpotifyConnectionState {
   token: ISpotifyToken;
