@@ -10,6 +10,12 @@ cp .env.example .env   # set PORT (default 3000)
 bun run dev            # hot reload at http://localhost:3000
 ```
 
+## Development
+
+- Uses Bun for runtime and tooling (`bun install`, `bun run dev`).
+- VS Code settings enforce 2-space tabs (see `.vscode/settings.json`).
+- Agents must not edit Git submodule files; see `.agent/rules/keep-submodules.md`.
+
 Spotify credentials live in `src/modules/config.ts` (copied from `config.example.ts`, git-ignored).
 
 ## Scripts
