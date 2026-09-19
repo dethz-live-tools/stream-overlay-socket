@@ -1,0 +1,11 @@
+{
+  "repo": "kizuna-inc/kz-rule",
+  "branch": "main",
+  "format": "agent",
+  "lastSync": "2026-09-19T12:06:43.903Z",
+  "installedRules": [
+    "keep-submodules",
+    "use-bun"
+  ],
+  "installedSkills": []
+}
