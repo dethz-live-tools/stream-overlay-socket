@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 
-export const GITHUB_REPO = "dethz-tools/dethz-socket-core";
+export const GITHUB_REPO = "dethz-live-tools/dethz-socket-core";
 export const DEFAULT_TAG = "v.1.0.0";
 export const DEFAULT_ZIP_URL = `https://github.com/${GITHUB_REPO}/archive/refs/tags/${DEFAULT_TAG}.zip`;
 
