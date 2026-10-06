@@ -2,10 +2,15 @@
   "repo": "kizuna-inc/kz-rule",
   "branch": "main",
   "format": "agent",
-  "lastSync": "2026-09-19T12:06:43.903Z",
+  "formats": [
+    "agent"
+  ],
+  "lastSync": "2026-10-05T17:31:25.611Z",
   "installedRules": [
     "keep-submodules",
-    "use-bun"
+    "use-bun",
+    "release-note",
+    "version-bump"
   ],
   "installedSkills": []
 }
