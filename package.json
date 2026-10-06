@@ -1,7 +1,13 @@
 {
   "name": "server",
+  "version": "1.0.0",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
+    "serve": "bun run src/index.ts serve",
+    "cli": "bun run src/index.ts",
+    "overlay:sync": "bun run src/index.ts overlay sync",
+    "overlay:list": "bun run src/index.ts overlay list",
+    "rules:sync": "bunx dethz-crawler sync",
     "build:all": "bun run build.ts",
     "build:box": "bun run build-box.ts",
     "build:binary": "bun build --compile --outfile ../build/server src/index.ts"

@@ -21,3 +21,5 @@ core
 # cache
 .bun-cache
 test
+
+.agent
