@@ -97,7 +97,8 @@ const init = async (ws: ServerWebSocket) => {
         }
       } else {
         stockData = data;
-        server.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
+        server?.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`) ??
+          ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
       }
     }
 
@@ -160,10 +161,14 @@ export const spotifyHandler = async (msg: string, ws: ServerWebSocket) => {
     } else {
       if (msg === "spt: pulling") {
         if (stockData !== null) {
-          server.publish(
+          (server?.publish(
             systemTopic,
             `spt: QUEUE ${JSON.stringify(stockData)}`,
-          );
+          ) ??
+            ws.publish(
+              systemTopic,
+              `spt: QUEUE ${JSON.stringify(stockData)}`,
+            ));
         } else {
           const data = await queueFetcher(conn.token);
           if (data !== null) {

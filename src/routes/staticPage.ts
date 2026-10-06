@@ -6,6 +6,7 @@ interface metadataInterface {
   description: string;
   image: string;
   author: string;
+  libs?: string[];
 }
 
 const color = `/* This is palette from "catppuccin -- Macchiato" */
