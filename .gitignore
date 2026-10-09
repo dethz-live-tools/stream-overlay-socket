@@ -23,6 +23,7 @@ core
 test
 
 .agent
+.agents
 .antigravityrc
 
 static-old
