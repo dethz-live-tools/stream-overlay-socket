@@ -15,6 +15,20 @@ interface SpotifyConnectionState {
 
 var stockData: ISpotifyQueue | null = null;
 
+const broadcastQueue = (ws: ServerWebSocket, queueData: ISpotifyQueue) => {
+  const queueMsg = `spt: QUEUE ${JSON.stringify(queueData)}`;
+  try {
+    ws.send(queueMsg);
+  } catch (err) {
+    // ws might be closed
+  }
+  if (server) {
+    server.publish(systemTopic, queueMsg);
+  } else {
+    ws.publish(systemTopic, queueMsg);
+  }
+};
+
 const activeConnections = new WeakMap<
   ServerWebSocket,
   SpotifyConnectionState
@@ -82,23 +96,25 @@ const init = async (ws: ServerWebSocket) => {
       ws.publish(systemTopic, "spt: fetch error (queue)");
     } else {
       if (stockData !== null) {
-        if (data.currently_playing === null) {
-          console.log("nothing playing rn");
-          return;
-        }
+        const prevPlayingId = stockData.currently_playing?.id ?? null;
+        const currPlayingId = data.currently_playing?.id ?? null;
+        const prevFirstId = stockData.queue?.[0]?.id ?? null;
+        const currFirstId = data.queue?.[0]?.id ?? null;
+        const prevLen = stockData.queue?.length ?? 0;
+        const currLen = data.queue?.length ?? 0;
 
-        if (
-          stockData.currently_playing === null ||
-          stockData.currently_playing.id !== data.currently_playing.id ||
-          stockData.queue[0].id !== data.queue[0].id
-        ) {
+        const hasChanged =
+          prevPlayingId !== currPlayingId ||
+          prevFirstId !== currFirstId ||
+          prevLen !== currLen;
+
+        if (hasChanged) {
           stockData = data;
-          ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
+          broadcastQueue(ws, data);
         }
       } else {
         stockData = data;
-        server?.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`) ??
-          ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
+        broadcastQueue(ws, data);
       }
     }
 
@@ -160,21 +176,14 @@ export const spotifyHandler = async (msg: string, ws: ServerWebSocket) => {
       ws.publish(systemTopic, "error: no token");
     } else {
       if (msg === "spt: pulling") {
-        if (stockData !== null) {
-          (server?.publish(
-            systemTopic,
-            `spt: QUEUE ${JSON.stringify(stockData)}`,
-          ) ??
-            ws.publish(
-              systemTopic,
-              `spt: QUEUE ${JSON.stringify(stockData)}`,
-            ));
+        const data = await queueFetcher(conn.token);
+        const resolvedData = data || stockData;
+
+        if (resolvedData !== null) {
+          stockData = resolvedData;
+          broadcastQueue(ws, resolvedData);
         } else {
-          const data = await queueFetcher(conn.token);
-          if (data !== null) {
-            stockData = data;
-            ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
-          }
+          ws.send("spt: fetch error (queue)");
         }
       } else if (msg === "spt: pull token") {
         ws.publish(
