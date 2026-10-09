@@ -2,9 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 
-export const GITHUB_REPO = "dethz-live-tools/dethz-socket-core";
+export const CORE_GITHUB_REPO = "dethz-live-tools/dethz-socket-core";
+export const APP_GITHUB_REPO = "dethz-live-tools/stream-overlay-socket";
+export const GITHUB_REPO = CORE_GITHUB_REPO;
 export const DEFAULT_TAG = "v.1.0.0";
-export const DEFAULT_ZIP_URL = `https://github.com/${GITHUB_REPO}/archive/refs/tags/${DEFAULT_TAG}.zip`;
+export const DEFAULT_ZIP_URL = `https://github.com/${CORE_GITHUB_REPO}/archive/refs/tags/${DEFAULT_TAG}.zip`;
 
 export interface UpdateCheckResult {
   hasUpdate: boolean;
@@ -25,22 +27,59 @@ export interface DownloadResult {
 }
 
 /**
- * Get current installed core version from core/.version or core/package.json
+ * Normalize version string by removing leading 'v' or 'v.' and trimming
+ */
+export function normalizeVersion(v: string | null | undefined): string {
+  if (!v) return "";
+  return v.trim().replace(/^[vV][.]?/, "");
+}
+
+/**
+ * Compare two semver strings
+ * Returns 1 if v1 > v2, -1 if v1 < v2, 0 if equal
+ */
+export function compareSemver(v1: string, v2: string): number {
+  const p1 = normalizeVersion(v1)
+    .split(".")
+    .map((n) => parseInt(n, 10) || 0);
+  const p2 = normalizeVersion(v2)
+    .split(".")
+    .map((n) => parseInt(n, 10) || 0);
+
+  const len = Math.max(p1.length, p2.length);
+  for (let i = 0; i < len; i++) {
+    const num1 = p1[i] || 0;
+    const num2 = p2[i] || 0;
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
+  }
+  return 0;
+}
+
+/**
+ * Get current installed core version from core/.version, core/VERSION, or core/package.json
  */
 export function getCurrentCoreVersion(coreDir = "core"): string | null {
   const resolvedDir = path.resolve(coreDir);
   const versionFilePath = path.join(resolvedDir, ".version");
+  const versionTxtPath = path.join(resolvedDir, "VERSION");
   const pkgPath = path.join(resolvedDir, "package.json");
 
   if (fs.existsSync(versionFilePath)) {
-    return fs.readFileSync(versionFilePath, "utf-8").trim();
+    const content = fs.readFileSync(versionFilePath, "utf-8").trim();
+    if (content) return content;
+  }
+
+  if (fs.existsSync(versionTxtPath)) {
+    const content = fs.readFileSync(versionTxtPath, "utf-8").trim();
+    if (content) return content.startsWith("v") ? content : `v${content}`;
   }
 
   if (fs.existsSync(pkgPath)) {
     try {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
       if (pkg.version) {
-        return pkg.version.startsWith("v") ? pkg.version : `v.${pkg.version}`;
+        return pkg.version.startsWith("v") ? pkg.version : `v${pkg.version}`;
       }
     } catch {
       // ignore JSON parse error
@@ -90,7 +129,7 @@ export async function checkForUpdate(
 
       const hasUpdate =
         !currentVersion ||
-        currentVersion.toLowerCase() !== latestVersion.toLowerCase();
+        compareSemver(latestVersion, currentVersion) > 0;
 
       return {
         hasUpdate,
@@ -103,7 +142,52 @@ export async function checkForUpdate(
       };
     }
 
-    // 2. Fallback: try tags endpoint if no releases endpoint response
+    // 2. Fallback: try releases list endpoint
+    const listRes = await fetch(
+      `https://api.github.com/repos/${repo}/releases?per_page=1`,
+      {
+        headers: {
+          "User-Agent": "dethz-socket-server",
+          Accept: "application/vnd.github.v3+json",
+        },
+      },
+    );
+
+    if (listRes.ok) {
+      const releases = (await listRes.json()) as Array<{
+        tag_name?: string;
+        html_url?: string;
+        body?: string;
+        published_at?: string;
+        zipball_url?: string;
+      }>;
+      if (releases.length > 0) {
+        const first = releases[0];
+        const latestVersion = first.tag_name || DEFAULT_TAG;
+        const zipUrl =
+          first.zipball_url ||
+          `https://github.com/${repo}/archive/refs/tags/${latestVersion}.zip`;
+        const releaseUrl =
+          first.html_url ||
+          `https://github.com/${repo}/releases/tag/${latestVersion}`;
+
+        const hasUpdate =
+          !currentVersion ||
+          compareSemver(latestVersion, currentVersion) > 0;
+
+        return {
+          hasUpdate,
+          currentVersion,
+          latestVersion,
+          zipUrl,
+          releaseUrl,
+          releaseNotes: first.body,
+          publishedAt: first.published_at,
+        };
+      }
+    }
+
+    // 3. Fallback: try tags endpoint if no releases endpoint response
     const tagsRes = await fetch(`https://api.github.com/repos/${repo}/tags`, {
       headers: {
         "User-Agent": "dethz-socket-server",
@@ -119,7 +203,7 @@ export async function checkForUpdate(
         const releaseUrl = `https://github.com/${repo}/releases/tag/${latestVersion}`;
         const hasUpdate =
           !currentVersion ||
-          currentVersion.toLowerCase() !== latestVersion.toLowerCase();
+          compareSemver(latestVersion, currentVersion) > 0;
 
         return {
           hasUpdate,
@@ -135,7 +219,7 @@ export async function checkForUpdate(
   }
 
   // Fallback default response if offline or GitHub API rate limited
-  const hasUpdate = currentVersion !== DEFAULT_TAG;
+  const hasUpdate = !currentVersion || compareSemver(DEFAULT_TAG, currentVersion) > 0;
   return {
     hasUpdate,
     currentVersion,
@@ -144,6 +228,233 @@ export async function checkForUpdate(
     releaseUrl: `https://github.com/${repo}/releases/tag/${DEFAULT_TAG}`,
   };
 }
+
+/**
+ * Get current installed app version from root package.json
+ */
+export function getCurrentAppVersion(): string {
+  try {
+    const pkgPath = path.resolve("package.json");
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+      if (pkg.version) {
+        return pkg.version.startsWith("v") ? pkg.version : `v${pkg.version}`;
+      }
+    }
+  } catch {
+    // ignore parse error
+  }
+  return "v1.0.0";
+}
+
+/**
+ * Check for updates from GitHub releases/tags for stream-overlay-socket (app)
+ */
+export async function checkForAppUpdate(
+  repo = APP_GITHUB_REPO,
+): Promise<UpdateCheckResult> {
+  const currentVersion = getCurrentAppVersion();
+
+  try {
+    // 1. Try fetching latest release from GitHub API
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/releases/latest`,
+      {
+        headers: {
+          "User-Agent": "dethz-socket-server",
+          Accept: "application/vnd.github.v3+json",
+        },
+      },
+    );
+
+    if (res.ok) {
+      const data = (await res.json()) as {
+        tag_name?: string;
+        html_url?: string;
+        body?: string;
+        published_at?: string;
+        zipball_url?: string;
+      };
+
+      const latestVersion = data.tag_name || currentVersion;
+      const zipUrl =
+        data.zipball_url ||
+        `https://github.com/${repo}/archive/refs/tags/${latestVersion}.zip`;
+      const releaseUrl =
+        data.html_url ||
+        `https://github.com/${repo}/releases/tag/${latestVersion}`;
+
+      const hasUpdate = compareSemver(latestVersion, currentVersion) > 0;
+
+      return {
+        hasUpdate,
+        currentVersion,
+        latestVersion,
+        zipUrl,
+        releaseUrl,
+        releaseNotes: data.body,
+        publishedAt: data.published_at,
+      };
+    }
+
+    // 2. Fallback: try releases list endpoint
+    const listRes = await fetch(
+      `https://api.github.com/repos/${repo}/releases?per_page=1`,
+      {
+        headers: {
+          "User-Agent": "dethz-socket-server",
+          Accept: "application/vnd.github.v3+json",
+        },
+      },
+    );
+
+    if (listRes.ok) {
+      const releases = (await listRes.json()) as Array<{
+        tag_name?: string;
+        html_url?: string;
+        body?: string;
+        published_at?: string;
+        zipball_url?: string;
+      }>;
+      if (releases.length > 0) {
+        const first = releases[0];
+        const latestVersion = first.tag_name || currentVersion;
+        const zipUrl =
+          first.zipball_url ||
+          `https://github.com/${repo}/archive/refs/tags/${latestVersion}.zip`;
+        const releaseUrl =
+          first.html_url ||
+          `https://github.com/${repo}/releases/tag/${latestVersion}`;
+
+        const hasUpdate = compareSemver(latestVersion, currentVersion) > 0;
+
+        return {
+          hasUpdate,
+          currentVersion,
+          latestVersion,
+          zipUrl,
+          releaseUrl,
+          releaseNotes: first.body,
+          publishedAt: first.published_at,
+        };
+      }
+    }
+
+    // 3. Fallback: try tags endpoint
+    const tagsRes = await fetch(`https://api.github.com/repos/${repo}/tags`, {
+      headers: {
+        "User-Agent": "dethz-socket-server",
+        Accept: "application/vnd.github.v3+json",
+      },
+    });
+
+    if (tagsRes.ok) {
+      const tags = (await tagsRes.json()) as Array<{ name: string }>;
+      if (tags.length > 0) {
+        const latestVersion = tags[0].name;
+        const zipUrl = `https://github.com/${repo}/archive/refs/tags/${latestVersion}.zip`;
+        const releaseUrl = `https://github.com/${repo}/releases/tag/${latestVersion}`;
+        const hasUpdate = compareSemver(latestVersion, currentVersion) > 0;
+
+        return {
+          hasUpdate,
+          currentVersion,
+          latestVersion,
+          zipUrl,
+          releaseUrl,
+        };
+      }
+    }
+  } catch (error) {
+    console.error("Error checking for app update:", error);
+  }
+
+  return {
+    hasUpdate: false,
+    currentVersion,
+    latestVersion: currentVersion,
+    zipUrl: "",
+    releaseUrl: `https://github.com/${repo}`,
+  };
+}
+
+/**
+ * Check for updates for both app and core lib in parallel
+ */
+export async function checkAllUpdates(): Promise<{
+  app: UpdateCheckResult;
+  core: UpdateCheckResult;
+  hasUpdate: boolean;
+}> {
+  const [app, core] = await Promise.all([
+    checkForAppUpdate(),
+    checkForUpdate(),
+  ]);
+
+  return {
+    app,
+    core,
+    hasUpdate: app.hasUpdate || core.hasUpdate,
+  };
+}
+
+/**
+ * Run non-blocking startup check for app and core lib and log status
+ */
+export async function runStartupUpdateCheck(): Promise<{
+  app: UpdateCheckResult;
+  core: UpdateCheckResult;
+  hasUpdate: boolean;
+}> {
+  console.log("→ Checking for updates on startup...");
+  try {
+    const results = await checkAllUpdates();
+    const { app, core } = results;
+
+    if (app.hasUpdate) {
+      console.log(
+        `  ★ App update available: ${app.currentVersion} → ${app.latestVersion} (${app.releaseUrl})`,
+      );
+    } else {
+      console.log(`  ✓ App is up to date (${app.currentVersion || "latest"})`);
+    }
+
+    if (core.hasUpdate) {
+      console.log(
+        `  ★ Core lib update available: ${core.currentVersion || "none"} → ${core.latestVersion} (Run "bun run update:core" or use controller UI)`,
+      );
+    } else {
+      console.log(`  ✓ Core lib is up to date (${core.currentVersion || "latest"})`);
+    }
+
+    return results;
+  } catch (err: any) {
+    console.warn(
+      "  ⚠ Warning: Failed to check for updates on startup:",
+      err?.message || err,
+    );
+    const fallbackApp: UpdateCheckResult = {
+      hasUpdate: false,
+      currentVersion: getCurrentAppVersion(),
+      latestVersion: getCurrentAppVersion(),
+      zipUrl: "",
+      releaseUrl: "",
+    };
+    const fallbackCore: UpdateCheckResult = {
+      hasUpdate: false,
+      currentVersion: getCurrentCoreVersion(),
+      latestVersion: DEFAULT_TAG,
+      zipUrl: DEFAULT_ZIP_URL,
+      releaseUrl: "",
+    };
+    return {
+      app: fallbackApp,
+      core: fallbackCore,
+      hasUpdate: false,
+    };
+  }
+}
+
 
 /**
  * Unzips zip buffer into target directory, stripping top-level directory if present.

@@ -1,10 +1,12 @@
 import { startServer } from "../../server";
 import { syncAllStaticLibs } from "../overlay/libs";
+import { runStartupUpdateCheck } from "../updater";
 
 export interface ServeCLIOptions {
   port?: number;
   hostname?: string;
   syncLibs?: boolean;
+  noUpdateCheck?: boolean;
 }
 
 export function parseServeArgs(args: string[]): ServeCLIOptions {
@@ -25,6 +27,8 @@ export function parseServeArgs(args: string[]): ServeCLIOptions {
       options.hostname = arg.split("=")[1];
     } else if (arg === "--sync-libs") {
       options.syncLibs = true;
+    } else if (arg === "--no-update-check" || arg === "--skip-update-check") {
+      options.noUpdateCheck = true;
     }
   }
 
@@ -37,6 +41,10 @@ export async function runServeCLI(args: string[] = []) {
   console.log("──────────────────────────────────────────");
   console.log("🚀 Stream Overlay Server");
   console.log("──────────────────────────────────────────");
+
+  if (!options.noUpdateCheck) {
+    await runStartupUpdateCheck();
+  }
 
   if (options.syncLibs) {
     console.log("→ Auto-syncing overlay libraries...");

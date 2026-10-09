@@ -7,6 +7,8 @@
     "cli": "bun run src/index.ts",
     "overlay:sync": "bun run src/index.ts overlay sync",
     "overlay:list": "bun run src/index.ts overlay list",
+    "update:check": "bun run src/index.ts update check",
+    "update:core": "bun run src/index.ts update download",
     "rules:sync": "bunx dethz-crawler sync",
     "build:all": "bun run build.ts",
     "build:box": "bun run build-box.ts",

@@ -8,6 +8,7 @@ import routes from "./routes";
 export interface ServerOptions {
   port?: number;
   hostname?: string;
+  checkUpdates?: boolean;
 }
 
 export let server: ReturnType<typeof Bun.serve> | null = null;
@@ -15,6 +16,14 @@ export let server: ReturnType<typeof Bun.serve> | null = null;
 export function startServer(options: ServerOptions = {}) {
   if (server) {
     return server;
+  }
+
+  if (options.checkUpdates) {
+    import("./modules/updater").then(({ runStartupUpdateCheck }) => {
+      runStartupUpdateCheck().catch((err) => {
+        console.warn("[startServer] Failed startup update check:", err);
+      });
+    });
   }
 
   const port = options.port ?? (Number(Bun.env.PORT) || 3000);
