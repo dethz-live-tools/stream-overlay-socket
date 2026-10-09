@@ -4,7 +4,7 @@ import { ServerWebSocket } from "bun";
 
 import { Greeting } from "./modules/greet";
 import { spotifyHandler, spotifyCleanup } from "./modules/spotify";
-import { tiktokHandler, tiktokCleanup } from "./modules/tiktok";
+import { tiktokHandler } from "./modules/tiktok";
 
 const ws = new Hono();
 
@@ -38,7 +38,6 @@ ws.get(
         const rawWS = ws.raw as ServerWebSocket;
         rawWS.unsubscribe(systemTopic);
         spotifyCleanup(rawWS);
-        tiktokCleanup(rawWS);
         console.log("Connection closed");
       },
     };
