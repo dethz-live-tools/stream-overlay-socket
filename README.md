@@ -29,20 +29,35 @@ bun run dev            # hot reload at http://localhost:3000
   - `release-note`: Formats release documentation and notes.
   - `version-bump`: Semantic version bumping workflow.
 
+## Documentation
+
+Comprehensive guides and technical documentation are available in the [`docs/`](docs/README.md) directory:
+
+- [**System Architecture & Flow**](docs/architecture.md) — Boot sequence, routing pipeline, and runtime layout.
+- [**API Extension Guide**](docs/extension-api.md) — Building and mounting modular plugins under `/api/extension/<module>`.
+- [**Overlay Authoring Guide**](docs/overlay-guide.md) — Building overlays, `meta.yaml` specification, Git libraries, and OBS setup.
+- [**WebSocket Protocol Reference**](docs/websocket-protocol.md) — Real-time messaging specification for Spotify, TikTok, and modules.
+- [**Controller & Socket Core**](docs/controller-and-core.md) — Web controller dashboard and automated core update mechanism.
+- [**CLI Command Reference**](docs/cli-reference.md) — Complete command-line manual and packaging instructions.
+
 ## Scripts
 
-| Command                | Description                                                 |
-| ---------------------- | ----------------------------------------------------------- |
-| `bun run dev`          | Start dev server with hot reload                            |
-| `bun run serve`        | Start overlay server via CLI command                        |
-| `bun run cli`          | Run CLI root dispatcher                                     |
-| `bun run overlay:list` | List all installed overlays and their metadata/libs         |
-| `bun run overlay:sync` | Sync and pull/clone libraries declared in `meta.yaml`       |
-| `bun run rules:sync`   | Sync AI agent rules from GitHub with `dethz-crawler`        |
-| `bun test`             | Run test suites with Bun's native test runner               |
-| `bun run build:all`    | Compile binaries for linux-x64, macos-arm64, windows-x64    |
-| `bun run build:box`    | Same + pack each binary with static assets and `.env` (zip) |
-| `bun run build:binary` | Compile single binary for current OS                        |
+| Command                 | Description                                                 |
+| ----------------------- | ----------------------------------------------------------- |
+| `bun run dev`           | Start dev server with hot reload                            |
+| `bun run serve`         | Start overlay server via CLI command                        |
+| `bun run cli`           | Run CLI root dispatcher                                     |
+| `bun run overlay:list`  | List all installed overlays and their metadata/libs         |
+| `bun run overlay:sync`  | Sync and pull/clone libraries declared in `meta.yaml`       |
+| `bun run module:list`   | List all installed expansion modules                        |
+| `bun run module:create` | Scaffold a new expansion module in `./modules/<name>`       |
+| `bun run update:check`  | Check GitHub for socket core updates                        |
+| `bun run update:core`   | Download and extract socket core update                     |
+| `bun run rules:sync`    | Sync AI agent rules from GitHub with `dethz-crawler`        |
+| `bun test`              | Run test suites with Bun's native test runner               |
+| `bun run build:all`     | Compile binaries for linux-x64, macos-arm64, windows-x64    |
+| `bun run build:box`     | Same + pack each binary with static assets and `.env` (zip) |
+| `bun run build:binary`  | Compile single binary for current OS                        |
 
 ## CLI Commands
 
@@ -75,7 +90,19 @@ bun run src/index.ts overlay sync dethz-overlay-horizontal
 bun run src/index.ts overlay install dethz-live-tools/dethz-overlay-horizontal
 ```
 
-### 3. Core Updates (`update`)
+### 3. API Expansion Modules (`module`)
+```sh
+# List installed expansion modules
+bun run src/index.ts module list
+
+# Scaffold a new module template in modules/<name>
+bun run src/index.ts module create <module-name>
+
+# Inspect details of an expansion module
+bun run src/index.ts module info <module-name>
+```
+
+### 4. Core Updates (`update`)
 ```sh
 # Show currently installed core version
 bun run src/index.ts update version
@@ -104,23 +131,28 @@ When `overlay sync` or `overlay install` runs:
 1. `libs` entries are parsed (supports `owner/repo` shorthand, HTTPS git URLs, and SSH URLs).
 2. The library is cloned into `static/libs/<lib-name>` or updated via `git pull` if already present.
 3. Libraries are deduplicated across overlays and served under `/static/libs/<lib-name>`.
+4. Detailed documentation is in [`docs/overlay-guide.md`](docs/overlay-guide.md).
 
 ## Routes
 
-| Method | Path                    | Description                                  |
-| ------ | ----------------------- | -------------------------------------------- |
-| `GET`  | `/`                     | Health check                                 |
-| `GET`  | `/static`               | Visual directory listing of all overlays     |
-| `GET`  | `/static/*`             | Static overlay files and shared libraries    |
-| `GET`  | `/controller/*`         | Control panel UI                             |
-| `GET`  | `/spotify/*`            | Spotify overlay UI                           |
-| `GET`  | `/core/*`               | Core assets and modules                      |
-| `GET`  | `/api/spotify/auth`     | Redirect to Spotify OAuth                    |
-| `POST` | `/api/spotify/callback` | Exchange auth code for token                 |
-| `GET`  | `/api/update/version`   | Get current installed core version           |
-| `GET`  | `/api/update/check`     | Check GitHub for socket core updates         |
-| `POST` | `/api/update/download`  | Download and extract socket core             |
-| `WS`   | `/ws`                   | WebSocket endpoint                           |
+| Method | Path                        | Description                                |
+| ------ | --------------------------- | ------------------------------------------ |
+| `GET`  | `/`                         | Health check                               |
+| `GET`  | `/static`                   | Visual directory listing of all overlays   |
+| `GET`  | `/static/*`                 | Static overlay files and shared libraries  |
+| `GET`  | `/controller/*`             | Control panel UI                           |
+| `GET`  | `/spotify/*`                | Spotify overlay UI                         |
+| `GET`  | `/core/*`                   | Core assets and modules                    |
+| `GET`  | `/api/spotify/auth`         | Redirect to Spotify OAuth                  |
+| `POST` | `/api/spotify/callback`     | Exchange auth code for token               |
+| `GET`  | `/api/update/version`       | Get current installed core version         |
+| `GET`  | `/api/update/check`         | Check GitHub for socket core updates       |
+| `POST` | `/api/update/download`      | Download and extract socket core           |
+| `GET`  | `/api/extension`            | List installed expansion modules           |
+| `GET`  | `/api/extension/info/:name` | Get specific expansion module metadata     |
+| `POST` | `/api/extension/reload`     | Reload all expansion modules from disk     |
+| `*`    | `/api/extension/:module/*`  | Routed directly to extension module router |
+| `WS`   | `/ws`                       | WebSocket endpoint                         |
 
 ## WebSocket Protocol
 
