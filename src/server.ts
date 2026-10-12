@@ -29,10 +29,20 @@ export function startServer(options: ServerOptions = {}) {
   const port = options.port ?? (Number(Bun.env.PORT) || 3000);
   const hostname = options.hostname;
 
-  // Ensure static directory exists
+  // Ensure static and expansion modules directories exist
   if (!fs.existsSync("static")) {
     fs.mkdirSync("static", { recursive: true });
   }
+  if (!fs.existsSync("modules")) {
+    fs.mkdirSync("modules", { recursive: true });
+  }
+
+  // Auto-load expansion modules from modules directory
+  import("./modules/expansion").then(({ expansionSlot }) => {
+    expansionSlot.loadFromDirectory("modules").catch((err) => {
+      console.error("[startServer] Failed to load expansion modules:", err);
+    });
+  });
 
   const app = new Hono();
   app.use("*", cors());

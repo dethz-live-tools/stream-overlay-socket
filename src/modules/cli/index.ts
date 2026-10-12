@@ -1,6 +1,7 @@
 import { runServeCLI } from "./serve";
 import { runOverlayCLI } from "./overlay";
 import { runUpdateCLI } from "./update";
+import { runModuleCLI } from "./module";
 
 export async function runCLI(args: string[] = process.argv.slice(2)) {
   const command = args[0]?.toLowerCase();
@@ -17,6 +18,12 @@ export async function runCLI(args: string[] = process.argv.slice(2)) {
 
     case "update":
       await runUpdateCLI(args.slice(1));
+      break;
+
+    case "module":
+    case "modules":
+    case "expansion":
+      await runModuleCLI(args.slice(1));
       break;
 
     case "--help":
@@ -52,8 +59,12 @@ function printMainHelp() {
   console.log("    overlay list        List all installed overlays");
   console.log("    overlay sync [name] Sync libraries in meta.yaml");
   console.log("    overlay install <url> Clone/pull overlay and sync its libs\n");
-  console.log("  update <subcommand>   Manage socket core updates");
-  console.log("    update check        Check for core updates from GitHub");
+  console.log("  module <subcommand>   Manage API expansion modules");
+  console.log("    module list         List all installed API expansion modules");
+  console.log("    module create <name> Scaffold a new expansion module template");
+  console.log("    module info <name>  Show details of an expansion module\n");
+  console.log("  update <subcommand>   Manage socket core and app updates");
+  console.log("    update check        Check for updates from GitHub");
   console.log("    update download     Download and extract latest core\n");
   console.log("  help, -h, --help      Display this help menu\n");
 }
@@ -61,6 +72,7 @@ function printMainHelp() {
 export * from "./serve";
 export * from "./overlay";
 export * from "./update";
+export * from "./module";
 
 if (import.meta.main) {
   runCLI().catch((err) => {

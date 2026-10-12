@@ -29,3 +29,13 @@ test
 static-old
 
 RELEASED_NOTE
+
+# modules
+/modules/*
+!/modules/README.md
+# !/modules/sample/
+
+# temp
+*.temp
+temp_*
+

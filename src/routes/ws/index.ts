@@ -5,6 +5,7 @@ import { ServerWebSocket } from "bun";
 import { Greeting } from "./modules/greet";
 import { spotifyHandler, spotifyCleanup } from "./modules/spotify";
 import { tiktokHandler } from "./modules/tiktok";
+import { expansionSlot } from "../../modules/expansion";
 
 const ws = new Hono();
 
@@ -31,7 +32,10 @@ ws.get(
         } else if (msg.startsWith("tt: ")) {
           await tiktokHandler(msg, rawWS);
         } else {
-          rawWS.publish(systemTopic, msg);
+          const handled = await expansionSlot.dispatchWsMessage(msg, rawWS);
+          if (!handled) {
+            rawWS.publish(systemTopic, msg);
+          }
         }
       },
       onClose: (_, ws) => {
