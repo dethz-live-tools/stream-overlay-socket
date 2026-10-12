@@ -32,16 +32,19 @@ bun run src/index.ts module create twitch
 bun run module:create twitch
 ```
 
-This creates a starter module at `modules/twitch/index.ts`.
+This creates a starter module at `modules/twitch/extensions.json` and `modules/twitch/index.ts`.
 
 ### 2. Module Directory Structure
 
 ```
 modules/
 └── twitch/
-    ├── index.ts        # Module entrypoint (exports default defineApiModule)
-    ├── package.json    # Optional local metadata
-    └── helpers.ts      # Optional helper utilities
+    ├── extensions.json # Module metadata & route configuration
+    ├── meta.ts         # Metadata loader and configuration helpers
+    ├── router.ts       # Hono routes and endpoint handlers
+    ├── ws.ts           # WebSocket message handler
+    ├── lifecycle.ts    # onInit and onDestroy lifecycle hooks
+    └── index.ts        # Module composer and default export
 ```
 
 ### 3. List Installed Modules
@@ -62,74 +65,121 @@ bun run src/index.ts module info twitch
 
 ## 🛠 Anatomy of an Extension Module
 
-An extension module must provide a default export using [`defineApiModule`](file:///Users/george/repo/dethz-tools/live-tools/stream-overlay-socket/src/modules/expansion/define.ts):
+Modules follow a function-per-file structure separating routes, WebSocket message handlers, and lifecycle hooks:
 
+### 1. `extensions.json`
+```json
+{
+  "name": "twitch",
+  "version": "1.0.0",
+  "description": "Twitch webhook and chat events integration",
+  "author": "StreamerName",
+  "tags": ["twitch", "chat", "webhooks"],
+  "routePath": "/twitch",
+  "wsPrefix": "twitch: ",
+  "enabled": true
+}
+```
+
+### 2. `meta.ts`
+```typescript
+import fs from "node:fs";
+import path from "node:path";
+import type { ApiModuleMeta } from "../../src/modules/expansion";
+
+export interface ExtensionConfig extends ApiModuleMeta {
+  routePath?: string;
+  wsPrefix?: string;
+}
+
+export function loadMeta(dir: string = import.meta.dir): ExtensionConfig {
+  const metaPath = path.resolve(dir, "extensions.json");
+  if (!fs.existsSync(metaPath)) {
+    throw new Error(`[twitch] Missing required metadata file: ${metaPath}`);
+  }
+  return JSON.parse(fs.readFileSync(metaPath, "utf-8"));
+}
+
+export const meta = loadMeta();
+```
+
+### 3. `router.ts`
 ```typescript
 import { Hono } from "hono";
+import type { ExpansionContext } from "../../src/modules/expansion";
+import { meta } from "./meta";
+
+export function registerRoutes(router: Hono, context: ExpansionContext): void {
+  // GET /api/extension/twitch
+  router.get("/", (c) => {
+    return c.json({
+      module: meta.name,
+      status: "active",
+      version: context.serverVersion,
+    });
+  });
+
+  // POST /api/extension/twitch/webhook
+  router.post("/webhook", async (c) => {
+    const payload = await c.req.json();
+    context.broadcast(`twitch: event ${JSON.stringify(payload)}`);
+    return c.json({ received: true });
+  });
+}
+```
+
+### 4. `ws.ts`
+```typescript
+import type { ServerWebSocket } from "bun";
+import type { ExpansionContext } from "../../src/modules/expansion";
+import { meta } from "./meta";
+
+export function handleWsMessage(
+  msg: string,
+  ws: ServerWebSocket,
+  context: ExpansionContext,
+): boolean {
+  const command = msg.replace(/^twitch:\s*/, "");
+  if (command.startsWith("status")) {
+    ws.send("twitch: status OK");
+    return true; // Mark as handled
+  }
+  return false;
+}
+```
+
+### 5. `lifecycle.ts`
+```typescript
+import type { ExpansionContext } from "../../src/modules/expansion";
+import { meta } from "./meta";
+
+export function onInit(context: ExpansionContext): void {
+  console.log(`[${meta.name}] Initialized on server v${context.serverVersion}`);
+}
+
+export function onDestroy(): void {
+  console.log(`[${meta.name}] Destroyed`);
+}
+```
+
+### 6. `index.ts`
+Composes the module definitions into a single [`defineApiModule`](file:///Users/george/repo/dethz-tools/live-tools/stream-overlay-socket/src/modules/expansion/define.ts) export:
+
+```typescript
 import { defineApiModule } from "../../src/modules/expansion";
+import { meta } from "./meta";
+import { registerRoutes } from "./router";
+import { handleWsMessage } from "./ws";
+import { onInit, onDestroy } from "./lifecycle";
 
 export default defineApiModule({
-  // 1. Module Metadata
-  meta: {
-    name: "twitch",
-    version: "1.0.0",
-    description: "Twitch webhook and chat events integration",
-    author: "StreamerName",
-    tags: ["twitch", "chat", "webhooks"],
-    enabled: true, // Set to false to disable loading
-  },
-
-  // 2. HTTP Sub-route (Defaults to "/<name>")
-  // Mounted at: /api/extension/twitch
-  routePath: "/twitch",
-
-  // 3. WebSocket message filter
-  // Intercepts messages starting with "twitch: "
-  wsPrefix: "twitch: ",
-
-  // 4. HTTP Router Configuration (Hono)
-  router: (router: Hono, context) => {
-    // GET /api/extension/twitch
-    router.get("/", (c) => {
-      return c.json({
-        module: "twitch",
-        status: "active",
-        version: context.serverVersion,
-      });
-    });
-
-    // POST /api/extension/twitch/webhook
-    router.post("/webhook", async (c) => {
-      const payload = await c.req.json();
-      
-      // Broadcast update to all overlay WebSocket clients
-      context.broadcast(`twitch: event ${JSON.stringify(payload)}`);
-      
-      return c.json({ received: true });
-    });
-  },
-
-  // 5. WebSocket Inbound Message Handler
-  onWsMessage: async (msg, ws, context) => {
-    // msg contains full string starting with "twitch: "
-    const command = msg.replace(/^twitch:\s*/, "");
-
-    if (command.startsWith("status")) {
-      ws.send("twitch: status OK");
-      return true; // Return true to mark as handled (prevents pub/sub echo)
-    }
-
-    return false; // Return false to broadcast to systemTopic
-  },
-
-  // 6. Lifecycle Hooks
-  onInit: async (context) => {
-    console.log(`[TwitchModule] Initialized on server v${context.serverVersion}`);
-  },
-
-  onDestroy: async () => {
-    console.log("[TwitchModule] Destroyed/Reloaded");
-  },
+  meta,
+  routePath: meta.routePath,
+  wsPrefix: meta.wsPrefix,
+  router: registerRoutes,
+  onWsMessage: handleWsMessage,
+  onInit,
+  onDestroy,
 });
 ```
 
