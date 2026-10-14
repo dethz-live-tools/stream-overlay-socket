@@ -21,6 +21,8 @@ Welcome to the **Stream Overlay Socket** documentation directory. This folder co
 
 ```
 stream-overlay-socket/
+├── config.json             # Root application configuration (Spotify, expansion keys, git-ignored)
+├── config.example.json     # Configuration template
 ├── core/                   # Updateable browser controller UI & static assets
 │   ├── controller/         # Web dashboard (/controller)
 │   ├── spotify/            # Spotify OAuth web views
@@ -32,11 +34,13 @@ stream-overlay-socket/
 │   ├── index.ts            # Entrypoint and CLI dispatcher
 │   ├── server.ts           # Bun.serve and Hono app bootstrap
 │   ├── routes/             # HTTP & WebSocket route handlers
-│   │   ├── api/            # REST API (/api/spotify, /api/update, /api/extension)
+│   │   ├── api/            # REST API (/api/spotify, /api/update, /api/extension, /api/config)
 │   │   ├── static/         # Static file delivery (/static, /controller, /core)
+│   │   ├── configPage.ts   # Configuration changer dashboard UI (/config)
 │   │   └── ws/             # WebSocket pub/sub engine (/ws)
 │   └── modules/            # Core backend subsystems
 │       ├── cli/            # CLI subcommands (serve, overlay, module, update)
+│       ├── config.ts       # Configuration loader, validator, and writer
 │       ├── expansion/      # Dynamic expansion slot engine & module loaders
 │       ├── overlay/        # Git library synchronization & meta.yaml parser
 │       ├── spotify/        # Spotify Web API client & polling engine
@@ -67,5 +71,5 @@ When extending or maintaining this project:
    - Shared client logic belongs in `static/libs/<lib-name>` managed via `meta.yaml` `libs` declarations.
 
 4. **Git Protection**:
-   - Never commit sensitive Spotify tokens or credentials (`src/modules/config.ts` is git-ignored; use `src/modules/config.example.ts`).
+   - Never commit sensitive Spotify tokens or credentials (`config.json` is git-ignored; use `config.example.json`).
    - Do not commit cloned dependency repos in `static/libs/` or submodules directly.

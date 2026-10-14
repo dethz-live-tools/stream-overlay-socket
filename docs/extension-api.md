@@ -259,8 +259,80 @@ When routes and lifecycle hooks run, the engine supplies an `ExpansionContext` o
 | `broadcast` | `(message: string) => boolean` | Broadcasts message to all connected clients on `systemTopic`. |
 | `systemTopic` | `string` | The default pub/sub topic identifier (`dethzon:system`). |
 | `serverVersion` | `string` | Currently running server semantic version. |
+| `config` | `Record<string, any>` | Global server configuration loaded from root `config.json` (via `config.ts`). |
 | `getModule` | `(name: string) => ApiModule \| undefined` | Look up another loaded module to call inter-module functions. |
 | `listModules` | `() => ApiModuleMeta[]` | Returns an array of all loaded module metadata objects. |
+
+### Accessing Server Configuration (`config.json` & `config.ts`)
+
+Outside modules can access global server credentials and custom module settings stored in root `config.json`:
+
+```json
+{
+  "TEST_VALUE": "build success!",
+  "SPOTIFY_CLIENT_ID": "8f9c0...",
+  "SPOTIFY_CLIENT_SECRET": "2ec51...",
+  "SPOTIFY_REDIRECT_URI": "http://localhost:3000/spotify/callback/",
+  "expansion": {
+    "simple-donate-expansion": {
+      "SIMPLE_DONATE_URI": "https://moon.localhost"
+    },
+    "my-module": {
+      "WEBHOOK_SECRET": "xyz123"
+    }
+  }
+}
+```
+
+#### Resolution and Precedence:
+When [`getModuleConfig(modName, sourceOrDir)`](file:///Users/george/repo/dethz-tools/live-tools/stream-overlay-socket/src/modules/expansion/slot.ts#L136-L224) runs:
+1. Locates the module folder in `./modules/` via [`findModuleFolder`](file:///Users/george/repo/dethz-tools/live-tools/stream-overlay-socket/src/modules/expansion/slot.ts#L42-L80) using file path ancestry or `extensions.json` metadata name matching (e.g. maps module `simple-donate` to folder `simple-donate-expansion`).
+2. Loads root `config.json`.
+3. Reads module local `config.json` in the module directory if present.
+4. Reads custom variables from `config.json` under `"expansion": { "<folder-name>": { ... } }` and `"expansion": { "<mod-name>": { ... } }`.
+5. Merges variables so `expansion` custom variables override defaults.
+
+#### Ways to Access Config:
+
+1. **Via `context.config`**:
+   Available directly inside `registerRoutes(router, context)`, `handleWsMessage(msg, ws, context)`, and `onInit(context)`:
+   ```typescript
+   export function registerRoutes(router: Hono, context: ExpansionContext): void {
+     const testVal = context.config?.TEST_VALUE;
+     const moduleUri = context.config?.SIMPLE_DONATE_URI;
+   }
+   ```
+
+2. **Via `getModuleConfig`**:
+   Automatically merges global `config.json`, module folder `expansion` variables, and local module `config.json`:
+   ```typescript
+   import { getModuleConfig } from "../../src/modules/expansion";
+   const moduleConfig = getModuleConfig("simple-donate", import.meta.dir);
+   console.log(moduleConfig.SIMPLE_DONATE_URI);
+   ```
+
+3. **Via Module Factory Function**:
+   An outside module can export a factory function taking `(config, context)`:
+   ```typescript
+   export default defineApiModule((config, context) => ({
+     meta,
+     routePath: meta.routePath,
+     router: registerRoutes,
+   }));
+   ```
+
+4. **Via Direct Import**:
+   ```typescript
+   import { config } from "../../src/modules/expansion";
+   ```
+
+#### Managing Variables via Web UI (`/config`)
+Streamers can manage custom module variables in real-time at `http://localhost:3000/config`:
+- Discovers installed folders in `./modules/` automatically.
+- Displays custom key-value tables per module.
+- Adds or removes variables without manually formatting JSON.
+- Saves changes directly to `config.json` and hot-reloads running modules.
+
 
 ---
 

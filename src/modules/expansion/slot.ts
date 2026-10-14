@@ -2,25 +2,241 @@ import fs from "node:fs";
 import path from "node:path";
 import { Hono } from "hono";
 import type { ServerWebSocket } from "bun";
-import { server } from "../../server";
-import { systemTopic } from "../../routes/ws";
 import { getCurrentAppVersion } from "../updater";
 import type {
   ApiModule,
+  ApiModuleFactory,
   ExpansionContext,
   LoadedApiModule,
 } from "./types";
+
+export const DEFAULT_SYSTEM_TOPIC = "dethzon:system";
+
+// ponytail: load config from config.ts with fallback to config.example.ts
+let currentConfig: Record<string, any> = {};
+
+export function loadConfig(): Record<string, any> {
+  try {
+    delete require.cache[require.resolve("../config")];
+  } catch {}
+  try {
+    const raw = require("../config");
+    currentConfig = raw?.default ? { ...raw.default, ...raw } : raw;
+  } catch {
+    try {
+      const fallback = require("../config.example");
+      currentConfig = fallback?.default ? { ...fallback.default, ...fallback } : fallback;
+    } catch {
+      currentConfig = {};
+    }
+  }
+  return currentConfig;
+}
+
+loadConfig();
+export { currentConfig as config };
+
+/**
+ * Find folder name under modules/ matching a module name or file path
+ */
+export function findModuleFolder(
+  modName?: string,
+  sourceOrDir?: string,
+  modulesDir = "modules",
+): string | null {
+  const resolvedModules = path.resolve(modulesDir);
+
+  if (sourceOrDir) {
+    const resolvedPath = path.resolve(sourceOrDir);
+    const rel = path.relative(resolvedModules, resolvedPath);
+    if (!rel.startsWith("..") && !path.isAbsolute(rel)) {
+      const seg = rel.split(path.sep)[0];
+      if (seg && fs.existsSync(path.join(resolvedModules, seg))) {
+        return seg;
+      }
+    }
+  }
+
+  if (fs.existsSync(resolvedModules)) {
+    try {
+      const entries = fs.readdirSync(resolvedModules, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory() || entry.name.startsWith(".") || entry.name.startsWith("_")) {
+          continue;
+        }
+
+        if (modName && entry.name.toLowerCase() === modName.toLowerCase()) {
+          return entry.name;
+        }
+
+        const meta = readExtensionMeta(path.join(resolvedModules, entry.name));
+        if (meta?.name && modName && meta.name.toLowerCase() === modName.toLowerCase()) {
+          return entry.name;
+        }
+      }
+    } catch {}
+  }
+
+  return null;
+}
+
+/**
+ * List folder names in modules/ directory
+ */
+export function listModuleFolderNames(dir = "modules"): string[] {
+  const resolvedDir = path.resolve(dir);
+  if (!fs.existsSync(resolvedDir)) return [];
+  try {
+    const entries = fs.readdirSync(resolvedDir, { withFileTypes: true });
+    return entries
+      .filter((e) => e.isDirectory() && !e.name.startsWith(".") && !e.name.startsWith("_"))
+      .map((e) => e.name);
+  } catch {
+    return [];
+  }
+}
+
+export interface DiscoveredModuleFolder {
+  folderName: string;
+  name: string;
+  version?: string;
+  description?: string;
+  enabled?: boolean;
+}
+
+/**
+ * List discovered modules with their folder name and extensions.json metadata
+ */
+export function listDiscoveredModuleFolders(
+  dir = "modules",
+): DiscoveredModuleFolder[] {
+  const resolvedDir = path.resolve(dir);
+  if (!fs.existsSync(resolvedDir)) return [];
+  try {
+    const entries = fs.readdirSync(resolvedDir, { withFileTypes: true });
+    const result: DiscoveredModuleFolder[] = [];
+    for (const entry of entries) {
+      if (
+        !entry.isDirectory() ||
+        entry.name.startsWith(".") ||
+        entry.name.startsWith("_")
+      ) {
+        continue;
+      }
+      const fullPath = path.join(resolvedDir, entry.name);
+      const meta = readExtensionMeta(fullPath);
+      result.push({
+        folderName: entry.name,
+        name: meta?.name || entry.name,
+        version: meta?.version,
+        description: meta?.description,
+        enabled: meta?.enabled ?? true,
+      });
+    }
+    return result;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Load merged configuration for a specific expansion module.
+ * Combines global host config, module-specific section in host config, expansion key, and local module config.json.
+ */
+export function getModuleConfig(
+  modName: string,
+  sourceOrDir?: string,
+): Record<string, any> {
+  const globalConfig = loadConfig();
+  let localConfig: Record<string, any> = {};
+
+  const folderName = findModuleFolder(modName, sourceOrDir);
+
+  if (sourceOrDir) {
+    try {
+      const dir =
+        fs.existsSync(sourceOrDir) && fs.statSync(sourceOrDir).isDirectory()
+          ? sourceOrDir
+          : path.dirname(sourceOrDir);
+
+      const localCandidates = [
+        path.join(dir, "config.json"),
+        path.join(dir, "..", "config.json"),
+      ];
+      for (const cand of localCandidates) {
+        if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
+          const parsed = JSON.parse(fs.readFileSync(cand, "utf-8"));
+          localConfig = { ...localConfig, ...parsed };
+          break;
+        }
+      }
+    } catch {}
+  } else if (folderName) {
+    const defaultModDir = path.resolve("modules", folderName);
+    const cand = path.join(defaultModDir, "config.json");
+    if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
+      try {
+        localConfig = JSON.parse(fs.readFileSync(cand, "utf-8"));
+      } catch {}
+    }
+  } else {
+    // Check default modules/<modName>/config.json
+    const defaultModDir = path.resolve("modules", modName);
+    const cand = path.join(defaultModDir, "config.json");
+    if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
+      try {
+        localConfig = JSON.parse(fs.readFileSync(cand, "utf-8"));
+      } catch {}
+    }
+  }
+
+  // Section in global config.json
+  const sectionConfig =
+    (modName ? globalConfig[modName] : undefined) ||
+    (folderName ? globalConfig[folderName] : undefined) ||
+    (modName ? globalConfig.modules?.[modName] : undefined) ||
+    (folderName ? globalConfig.modules?.[folderName] : undefined) ||
+    (modName ? globalConfig.extensions?.[modName] : undefined) ||
+    (folderName ? globalConfig.extensions?.[folderName] : undefined) ||
+    {};
+
+  // Read variables from expansion key in config.json
+  const expansionSection = {
+    ...(folderName && globalConfig.expansion?.[folderName]
+      ? globalConfig.expansion[folderName]
+      : {}),
+    ...(modName && globalConfig.expansion?.[modName]
+      ? globalConfig.expansion[modName]
+      : {}),
+  };
+
+  return {
+    ...globalConfig,
+    ...sectionConfig,
+    ...localConfig,
+    ...expansionSection,
+  };
+}
 
 export class ApiExpansionSlot {
   private modules = new Map<string, LoadedApiModule>();
   private mountedRouter: Hono | null = null;
   private isInitialized = false;
 
+  public get config(): Record<string, any> {
+    return currentConfig;
+  }
+
+  public reloadConfig(): Record<string, any> {
+    return loadConfig();
+  }
+
   public get context(): ExpansionContext {
     return {
       broadcast: (message: string) => this.broadcast(message),
-      systemTopic,
+      systemTopic: DEFAULT_SYSTEM_TOPIC,
       serverVersion: getCurrentAppVersion(),
+      config: this.config,
       getModule: (name: string) => this.get(name)?.module,
       listModules: () => this.list().map((m) => m.module.meta),
     };
@@ -30,10 +246,13 @@ export class ApiExpansionSlot {
    * Broadcast message to all connected WebSocket clients on systemTopic
    */
   public broadcast(message: string): boolean {
-    if (server && typeof (server as any).publish === "function") {
-      (server as any).publish(systemTopic, message);
-      return true;
-    }
+    try {
+      const { server } = require("../../server");
+      if (server && typeof server.publish === "function") {
+        server.publish(DEFAULT_SYSTEM_TOPIC, message);
+        return true;
+      }
+    } catch {}
     return false;
   }
 
@@ -41,13 +260,34 @@ export class ApiExpansionSlot {
    * Register an API module into the expansion slot
    */
   public async register(
-    module: ApiModule,
+    moduleOrFactory: ApiModule | ApiModuleFactory,
     source = "programmatic",
   ): Promise<LoadedApiModule> {
-    const name = module.meta.name.trim().toLowerCase();
+    const initialName =
+      (typeof moduleOrFactory === "object" && moduleOrFactory.meta?.name) ||
+      (typeof moduleOrFactory === "function" && (moduleOrFactory as any).name) ||
+      "";
+    const initialConfig = initialName ? getModuleConfig(initialName, source) : this.config;
+    const initialContext: ExpansionContext = {
+      ...this.context,
+      config: initialConfig,
+    };
+
+    const module =
+      typeof moduleOrFactory === "function" && !isApiModule(moduleOrFactory)
+        ? await moduleOrFactory(initialConfig, initialContext)
+        : moduleOrFactory;
+
+    const name = module.meta?.name?.trim().toLowerCase();
     if (!name) {
       throw new Error("Module must provide a valid meta.name");
     }
+
+    const resolvedConfig = getModuleConfig(name, source);
+    const resolvedContext: ExpansionContext = {
+      ...this.context,
+      config: resolvedConfig,
+    };
 
     // Clean up previous registration if re-registering
     if (this.modules.has(name)) {
@@ -63,14 +303,14 @@ export class ApiExpansionSlot {
     let subRouter: Hono;
     if (typeof module.router === "function") {
       subRouter = new Hono();
-      await module.router(subRouter, this.context);
+      await module.router(subRouter, resolvedContext);
     } else {
       subRouter = module.router;
     }
 
     if (module.onInit) {
       try {
-        await module.onInit(this.context);
+        await module.onInit(resolvedContext);
       } catch (err) {
         console.error(`[ExpansionSlot] Error initializing module "${name}":`, err);
       }
@@ -169,6 +409,7 @@ export class ApiExpansionSlot {
    * Auto-discover and load modules from a directory (default: ./modules)
    */
   public async loadFromDirectory(dir = "modules"): Promise<number> {
+    loadConfig();
     const resolvedDir = path.resolve(dir);
     if (!fs.existsSync(resolvedDir)) {
       try {
@@ -238,7 +479,30 @@ export class ApiExpansionSlot {
       if (entryPoint) {
         try {
           const imported = await import(entryPoint);
-          const modCandidate = imported.default || imported.module || imported;
+          let modCandidate = imported.default || imported.module || imported;
+
+          const baseName =
+            extensionMeta?.name || entry.name.replace(/\.(ts|js)$/, "");
+          const moduleConfig = getModuleConfig(
+            baseName,
+            entry.isDirectory() ? fullPath : undefined,
+          );
+          const moduleContext: ExpansionContext = {
+            ...this.context,
+            config: moduleConfig,
+          };
+
+          // ponytail: allow outside modules to export factory function receiving (config, context)
+          if (typeof modCandidate === "function" && !isApiModule(modCandidate)) {
+            try {
+              const produced = await modCandidate(moduleConfig, moduleContext);
+              if (isApiModule(produced)) {
+                modCandidate = produced;
+              }
+            } catch {
+              // continue to standard router wrapping
+            }
+          }
 
           if (isApiModule(modCandidate)) {
             if (extensionMeta) {
@@ -309,7 +573,11 @@ export class ApiExpansionSlot {
 
       if (matches) {
         try {
-          const res = await module.onWsMessage(msg, ws, this.context);
+          const modContext: ExpansionContext = {
+            ...this.context,
+            config: getModuleConfig(module.meta.name, loaded.source),
+          };
+          const res = await module.onWsMessage(msg, ws, modContext);
           if (res === true) {
             return true;
           }

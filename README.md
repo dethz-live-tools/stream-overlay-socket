@@ -15,7 +15,9 @@ bun run dev            # hot reload at http://localhost:3000
 - **Use Bun**: Always use Bun as the runtime and package manager (`bun <file>`, `bun run <script>`, `bun test`, `bun install`, `bun build`). Do not use Node.js, npm, pnpm, yarn, or vite (see `.agent/rules/use-bun.md`).
 - **Submodules Protection**: Agents must not edit files inside Git submodules or external checkouts (see `.agent/rules/keep-submodules.md`).
 - **Formatting**: 2-space indentation with spaces enforced (see `.vscode/settings.json`).
-- **Credentials**: Spotify credentials live in `src/modules/config.ts` (copied from `config.example.ts`, git-ignored).
+- **Configuration & Credentials**: Global settings and Spotify credentials live in `config.json` in the root of the repository (auto-generated from `config.example.json` if missing, git-ignored).
+- **Configuration Changer Page (`/config`)**: Visual Catppuccin-themed dashboard at `http://localhost:3000/config` to edit Spotify credentials, root keys, and per-module custom variables.
+- **Module Expansion Variables**: Modules in `./modules/` have their custom variables stored under the `"expansion"` key in `config.json` (keyed by folder name, e.g. `"expansion": { "<folder-name>": { "KEY": "VAL" } }`).
 - **Rule Syncing with `dethz-crawler`**: AI agent rules in `.agent/rules/` are git-ignored and synchronized from GitHub via [dethz-crawler](https://github.com/dethMastery/dethz-crawler) using `.agentrc.json` (source: `kizuna-inc/kz-rule`).
   ```sh
   # Sync / re-pull installed agent rules
@@ -141,8 +143,11 @@ When `overlay sync` or `overlay install` runs:
 | `GET`  | `/static`                   | Visual directory listing of all overlays   |
 | `GET`  | `/static/*`                 | Static overlay files and shared libraries  |
 | `GET`  | `/controller/*`             | Control panel UI                           |
+| `GET`  | `/config`                   | Configuration changer dashboard (Spotify & module expansion variables) |
 | `GET`  | `/spotify/*`                | Spotify overlay UI                         |
 | `GET`  | `/core/*`                   | Core assets and modules                    |
+| `GET`  | `/api/config`               | Read configuration as JSON                 |
+| `POST` | `/api/config`               | Update configuration in config.json (supports expansion) |
 | `GET`  | `/api/spotify/auth`         | Redirect to Spotify OAuth                  |
 | `POST` | `/api/spotify/callback`     | Exchange auth code for token               |
 | `GET`  | `/api/update/version`       | Get current installed core version         |

@@ -24,6 +24,10 @@ export interface ExpansionContext {
    */
   serverVersion: string;
   /**
+   * Global configuration loaded from config.ts
+   */
+  config: Record<string, any>;
+  /**
    * Retrieve another loaded module by name
    */
   getModule: (name: string) => ApiModule | undefined;
@@ -37,6 +41,11 @@ export type RouterFactory = (
   router: Hono,
   context: ExpansionContext,
 ) => void | Promise<void>;
+
+export type ApiModuleFactory = (
+  config: Record<string, any>,
+  context: ExpansionContext,
+) => ApiModule | Promise<ApiModule>;
 
 export interface ApiModule {
   meta: ApiModuleMeta;

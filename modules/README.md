@@ -139,3 +139,42 @@ export function onDestroy(): void {
 Modules can:
 1. **Broadcast to Overlays**: Call `context.broadcast(message)` to send any payload over `dethzon:system` to all connected overlay browsers.
 2. **Handle Incoming WebSocket Messages**: Define `wsPrefix: "prefix: "` and `onWsMessage(msg, ws, context)` to intercept messages before default pub/sub.
+
+---
+
+## ⚙️ Accessing Server Configuration (`config.json` & `config.ts`)
+
+Outside modules can access global server credentials and custom module settings from root `config.json`:
+
+```json
+{
+  "TEST_VALUE": "build success!",
+  "SPOTIFY_CLIENT_ID": "...",
+  "expansion": {
+    "simple-donate-expansion": {
+      "SIMPLE_DONATE_URI": "https://moon.localhost"
+    }
+  }
+}
+```
+
+### Methods:
+- **Via `context.config`**: Available directly in `registerRoutes(router, context)`, `onWsMessage(msg, ws, context)`, and `onInit(context)`. Automatically includes custom variables configured under `expansion[<folder-name>]`.
+- **Via `getModuleConfig`**:
+  ```typescript
+  import { getModuleConfig } from "../../src/modules/expansion";
+  const moduleConfig = getModuleConfig("simple-donate", import.meta.dir);
+  console.log(moduleConfig.SIMPLE_DONATE_URI);
+  ```
+  Merges root `config.json`, module local `config.json`, and `config.expansion[folderName]`. Folder name is automatically resolved from `./modules/` using directory ancestry or `extensions.json` `name`.
+- **Via Module Factory Export**: `export default defineApiModule((config, context) => ({ ... }))`.
+- **Via Direct Import**: `import { config } from "../../src/modules/expansion";`.
+
+### 🖥 Web Configuration UI (`/config`)
+Streamers can visually edit and add module variables at `http://localhost:3000/config`:
+1. Scans and lists all folder names in `./modules/`.
+2. Shows key-value tables for custom variables under `"expansion": { "<module-folder>": { ... } }`.
+3. Allows adding and removing variables without manual JSON edits.
+4. Hot-reloads modules automatically on save.
+
+

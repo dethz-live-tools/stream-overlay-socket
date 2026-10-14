@@ -64,5 +64,6 @@ export async function runServeCLI(args: string[] = []) {
   console.log(`  - Overlays:   http://${s.hostname}:${s.port}/static`);
   console.log(`  - WebSocket:  ws://${s.hostname}:${s.port}/ws`);
   console.log(`  - Controller: http://${s.hostname}:${s.port}/controller`);
+  console.log(`  - Config:     http://${s.hostname}:${s.port}/config`);
   console.log("──────────────────────────────────────────");
 }

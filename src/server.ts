@@ -58,6 +58,8 @@ export function startServer(options: ServerOptions = {}) {
       "/api/*": app.fetch,
       "/spotify/*": app.fetch,
       "/controller": app.fetch,
+      "/config": app.fetch,
+      "/config/*": app.fetch,
       "/core/*": app.fetch,
       "/static": app.fetch,
       "/static/*": app.fetch,

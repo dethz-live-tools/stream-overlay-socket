@@ -6,7 +6,7 @@ node_modules/
 .env.local
 
 # using instead of .env
-config.ts
+config.json
 
 # build output
 build
