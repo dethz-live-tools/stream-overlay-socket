@@ -6,16 +6,19 @@ Bun + Hono WebSocket server for stream overlay control. Bridges a browser contro
 
 ```sh
 bun install
-cp .env.example .env   # set PORT (default 3000)
-bun run dev            # hot reload at http://localhost:3000
+cp .env.example .env                 # set PORT (default 3000)
+cp config.example.json config.json   # or auto-generated on first boot
+bun run dev                          # hot reload at http://localhost:3000
 ```
+
+Open `http://localhost:3000/config` in your browser to configure Spotify credentials and custom expansion module variables visually.
 
 ## Development & Rules
 
 - **Use Bun**: Always use Bun as the runtime and package manager (`bun <file>`, `bun run <script>`, `bun test`, `bun install`, `bun build`). Do not use Node.js, npm, pnpm, yarn, or vite (see `.agent/rules/use-bun.md`).
 - **Submodules Protection**: Agents must not edit files inside Git submodules or external checkouts (see `.agent/rules/keep-submodules.md`).
 - **Formatting**: 2-space indentation with spaces enforced (see `.vscode/settings.json`).
-- **Configuration & Credentials**: Global settings and Spotify credentials live in `config.json` in the root of the repository (auto-generated from `config.example.json` if missing, git-ignored).
+- **Configuration & Credentials**: Global settings and Spotify credentials live in `config.json` in the root of the repository (auto-generated from `config.example.json` if missing, git-ignored). Implementation is strictly in [`src/modules/config.ts`](src/modules/config.ts) (not in root).
 - **Configuration Changer Page (`/config`)**: Visual Catppuccin-themed dashboard at `http://localhost:3000/config` to edit Spotify credentials, root keys, and per-module custom variables.
 - **Module Expansion Variables**: Modules in `./modules/` have their custom variables stored under the `"expansion"` key in `config.json` (keyed by folder name, e.g. `"expansion": { "<folder-name>": { "KEY": "VAL" } }`).
 - **Rule Syncing with `dethz-crawler`**: AI agent rules in `.agent/rules/` are git-ignored and synchronized from GitHub via [dethz-crawler](https://github.com/dethMastery/dethz-crawler) using `.agentrc.json` (source: `kizuna-inc/kz-rule`).
@@ -134,6 +137,45 @@ When `overlay sync` or `overlay install` runs:
 2. The library is cloned into `static/libs/<lib-name>` or updated via `git pull` if already present.
 3. Libraries are deduplicated across overlays and served under `/static/libs/<lib-name>`.
 4. Detailed documentation is in [`docs/overlay-guide.md`](docs/overlay-guide.md).
+
+## Configuration & Module Expansions
+
+All persistent settings, Spotify credentials, and module variables are stored in `config.json` at the project root:
+
+```json
+{
+  "TEST_VALUE": "build success!",
+  "SPOTIFY_CLIENT_ID": "8f9c0...",
+  "SPOTIFY_CLIENT_SECRET": "2ec51...",
+  "SPOTIFY_REDIRECT_URI": "http://localhost:3000/spotify/callback/",
+  "expansion": {
+    "simple-donate-expansion": {
+      "SIMPLE_DONATE_URI": "https://moon.localhost"
+    }
+  }
+}
+```
+
+### 1. Configuration Changer UI (`/config`)
+Visit `http://localhost:3000/config` to manage configuration visually:
+- **Automatic Module Discovery**: Scans `./modules/` directory to discover and list installed module folders.
+- **Dynamic Variable Tables**: Add, edit, or remove custom key-value variables per module under the `"expansion"` key.
+- **Dual Views**: Switch seamlessly between Catppuccin **Form View** and **Raw JSON** editor with bidirectional synchronization.
+- **Instant Save**: Intercepts submissions via AJAX with visual toast notifications and hot-reloads active expansion modules.
+
+### 2. Configuration API (`/api/config`)
+- `GET /api/config` — Retrieves the active configuration object and absolute file path.
+- `POST /api/config` — Updates `config.json` and hot-reloads runtime expansion slot cache.
+
+### 3. Accessing Configuration in Modules
+Expansion modules can access global and module-specific variables:
+```typescript
+import { getModuleConfig } from "../../src/modules/expansion";
+
+// Automatically resolves folder in modules/ and merges root config + expansion variables:
+const moduleConfig = getModuleConfig("simple-donate", import.meta.dir);
+console.log(moduleConfig.SIMPLE_DONATE_URI);
+```
 
 ## Routes
 

@@ -7,6 +7,7 @@ import controller from "./controller";
 import spotify from "./spotify";
 import source from "./source";
 import staticPath from "./static";
+import config from "./config";
 import { downloadAndExtractCore } from "../../modules/updater";
 
 export const mainHandler = async (routes: Hono) => {
@@ -26,6 +27,7 @@ export const mainHandler = async (routes: Hono) => {
   routes.route("/controller", controller);
   routes.route("/spotify", spotify);
   routes.route("/core", source);
+  routes.route("/config", config);
 
   routes.route("/static", staticPath);
 };

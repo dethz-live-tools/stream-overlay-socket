@@ -4,7 +4,6 @@ import fs from "node:fs";
 import ws from "./ws";
 import api from "./api";
 import { staticListingPage } from "./staticPage";
-import { renderConfigPage } from "./configPage";
 import { mainHandler } from "./static";
 import { saveConfig } from "../modules/config";
 import { expansionSlot } from "../modules/expansion";
@@ -20,11 +19,6 @@ routes.get("/static", (c) => {
   const dirList = fs.readdirSync("static");
 
   return c.html(staticListingPage(dirList));
-});
-
-routes.get("/config", (c) => {
-  const isSaved = c.req.query("saved") === "true";
-  return c.html(renderConfigPage(isSaved));
 });
 
 routes.post("/config", async (c) => {

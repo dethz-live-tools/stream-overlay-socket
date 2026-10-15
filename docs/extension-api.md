@@ -259,11 +259,11 @@ When routes and lifecycle hooks run, the engine supplies an `ExpansionContext` o
 | `broadcast` | `(message: string) => boolean` | Broadcasts message to all connected clients on `systemTopic`. |
 | `systemTopic` | `string` | The default pub/sub topic identifier (`dethzon:system`). |
 | `serverVersion` | `string` | Currently running server semantic version. |
-| `config` | `Record<string, any>` | Global server configuration loaded from root `config.json` (via `config.ts`). |
+| `config` | `Record<string, any>` | Global server configuration loaded from root `config.json` (via `src/modules/config.ts`). |
 | `getModule` | `(name: string) => ApiModule \| undefined` | Look up another loaded module to call inter-module functions. |
 | `listModules` | `() => ApiModuleMeta[]` | Returns an array of all loaded module metadata objects. |
 
-### Accessing Server Configuration (`config.json` & `config.ts`)
+### Accessing Server Configuration (`config.json` & `src/modules/config.ts`)
 
 Outside modules can access global server credentials and custom module settings stored in root `config.json`:
 

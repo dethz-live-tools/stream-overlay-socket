@@ -142,7 +142,7 @@ Modules can:
 
 ---
 
-## ⚙️ Accessing Server Configuration (`config.json` & `config.ts`)
+## ⚙️ Accessing Server Configuration (`config.json` & `src/modules/config.ts`)
 
 Outside modules can access global server credentials and custom module settings from root `config.json`:
 

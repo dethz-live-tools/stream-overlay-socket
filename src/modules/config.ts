@@ -113,6 +113,9 @@ export function saveConfig(
   const configPath = customConfigPath ?? resolveConfigPath();
   const existing = loadConfig(configPath);
   const merged = { ...existing, ...updates };
+  if (existing.expansion && updates.expansion) {
+    merged.expansion = { ...existing.expansion, ...updates.expansion };
+  }
 
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, JSON.stringify(merged, null, 2) + "\n", "utf-8");

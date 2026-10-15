@@ -35,8 +35,7 @@ stream-overlay-socket/
 │   ├── server.ts           # Bun.serve and Hono app bootstrap
 │   ├── routes/             # HTTP & WebSocket route handlers
 │   │   ├── api/            # REST API (/api/spotify, /api/update, /api/extension, /api/config)
-│   │   ├── static/         # Static file delivery (/static, /controller, /core)
-│   │   ├── configPage.ts   # Configuration changer dashboard UI (/config)
+│   │   ├── static/         # Static file & web page delivery (/static, /controller, /core, /config)
 │   │   └── ws/             # WebSocket pub/sub engine (/ws)
 │   └── modules/            # Core backend subsystems
 │       ├── cli/            # CLI subcommands (serve, overlay, module, update)
