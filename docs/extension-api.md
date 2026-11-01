@@ -329,10 +329,175 @@ When [`getModuleConfig(modName, sourceOrDir)`](file:///Users/george/repo/dethz-t
 #### Managing Variables via Web UI (`/config`)
 Streamers can manage custom module variables in real-time at `http://localhost:3000/config`:
 - Discovers installed folders in `./modules/` automatically.
-- Displays custom key-value tables per module.
+- Displays structured schema-driven forms or dynamic key-value tables per module.
+- Features quick selector dropdown, variable search/filtering, and module tabs.
 - Adds or removes variables without manually formatting JSON.
 - Saves changes directly to `config.json` and hot-reloads running modules.
 
+### 📐 Declaring Configuration Schema (`extensions.json`)
+
+Modules can declare a structured form schema directly inside `extensions.json`:
+
+```json
+{
+  "name": "twitch",
+  "version": "1.0.0",
+  "routePath": "/twitch",
+  "enabled": true,
+  "config": {
+    "title": "Twitch Integration Settings",
+    "description": "Configure Twitch bot credentials and channel alerts",
+    "icon": "🟣",
+    "fields": [
+      {
+        "key": "TWITCH_CHANNEL",
+        "label": "Channel Name",
+        "type": "text",
+        "placeholder": "e.g. streamer_channel"
+      },
+      {
+        "key": "TWITCH_OAUTH_TOKEN",
+        "label": "OAuth Token",
+        "type": "password",
+        "description": "Chat bot user OAuth token"
+      },
+      {
+        "key": "CHAT_COOLDOWN_SEC",
+        "label": "Command Cooldown (seconds)",
+        "type": "number",
+        "default": 5
+      },
+      {
+        "key": "ALERT_MODE",
+        "label": "Notification Mode",
+        "type": "select",
+        "options": ["chat", "overlay", "both"],
+        "default": "both"
+      },
+      {
+        "key": "ENABLE_ALERTS",
+        "label": "Enable Stream Alerts",
+        "type": "boolean",
+        "default": true
+      }
+    ]
+  }
+}
+```
+
+Supported field types: `text`, `password`, `number`, `boolean`, `select` (with `options`), `textarea`, and `json`.
+
+---
+
+## 🧩 Core Configure Page Client API (`window.ExpansionConfig`)
+
+The configure page exports `window.ExpansionConfig` (also aliased as `window.ConfigAPI`) allowing modules or custom dashboard addons to programmatically extend menus, selectors, forms, and lifecycle hooks.
+
+### 1. Menu Extension API (`ExpansionConfig.menu`)
+
+Add custom menu items or buttons to the expansion menu bar:
+
+```javascript
+window.ExpansionConfig.menu.register({
+  id: "twitch-tools",
+  label: "Twitch Tools",
+  icon: "🛠️",
+  badge: "PRO",
+  onClick: (item, event) => {
+    window.ExpansionConfig.selectModule("twitch");
+    console.log("Selected Twitch tools menu item");
+  }
+});
+```
+
+- `ExpansionConfig.menu.register(item)`: Add or update a menu item.
+- `ExpansionConfig.menu.remove(id)`: Remove a custom menu item.
+- `ExpansionConfig.menu.getAll()`: Retrieve all registered items.
+- `ExpansionConfig.menu.render()`: Trigger menu re-render.
+
+### 2. Selector Extension API (`ExpansionConfig.selector`)
+
+Interact with the module selector dropdown or inject custom selector widgets into the selector bar:
+
+```javascript
+// Programmatically switch active module
+window.ExpansionConfig.selector.setValue("simple-donate-expansion");
+
+// Read current active selector value
+const active = window.ExpansionConfig.selector.getValue();
+
+// Register a custom selector widget in the selector bar
+window.ExpansionConfig.selector.register("env-switcher", {
+  render: (container, context) => {
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = `
+      <select class="expansion-dropdown-select" style="max-width: 140px;">
+        <option value="dev">Mode: DEV</option>
+        <option value="prod">Mode: PROD</option>
+      </select>
+    `;
+    return wrapper;
+  }
+});
+```
+
+### 3. Form Extension & Custom Renderers (`ExpansionConfig.form`)
+
+Register custom form definitions, custom field types, or programmatically update form values:
+
+```javascript
+// 1. Register module definition with custom actions and save hook
+window.ExpansionConfig.form.registerModule("twitch", {
+  title: "Twitch Integration",
+  icon: "🟣",
+  actions: [
+    {
+      label: "Test Connection",
+      icon: "⚡",
+      onClick: async (folder, currentVals, helpers) => {
+        helpers.showToast("Testing connection to Twitch...");
+      }
+    }
+  ],
+  onSave: async (values, helpers) => {
+    console.log("Saving Twitch config:", values);
+    return true; // Return false to cancel save
+  }
+});
+
+// 2. Programmatically update form fields
+window.ExpansionConfig.form.updateForm("twitch", {
+  TWITCH_CHANNEL: "dethz_live",
+  ENABLE_ALERTS: true
+});
+
+// 3. Register custom field type renderer
+window.ExpansionConfig.form.registerFieldType("color-picker", (field, value, onChange, context) => {
+  const input = document.createElement("input");
+  input.type = "color";
+  input.value = value || "#ff0000";
+  input.onchange = () => onChange(input.value);
+  return input;
+});
+```
+
+### 4. Event Hooks (`ExpansionConfig.on`)
+
+Listen to configure page events:
+
+```javascript
+window.ExpansionConfig.on("moduleSelect", (moduleName) => {
+  console.log("User selected module:", moduleName);
+});
+
+window.ExpansionConfig.on("formUpdate", ({ module, values }) => {
+  console.log("Module form updated:", module, values);
+});
+
+window.ExpansionConfig.on("afterSave", ({ module, data, result }) => {
+  console.log("Module saved successfully:", module);
+});
+```
 
 ---
 

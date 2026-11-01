@@ -20,89 +20,101 @@ const activeConnections = new WeakMap<
   SpotifyConnectionState
 >();
 
-const refresh_token = async (
+// ponytail: refresh if missing timestamp, expired, or near expiry (< 10 min)
+export const refresh_token = async (
   inp_token: ISpotifyToken,
   time: number,
 ): Promise<ISpotifyToken | null> => {
-  if (inp_token.timestamp === undefined) {
-    return null;
-  }
+  const needsRefresh =
+    !inp_token.timestamp?.end ||
+    inp_token.timestamp.end - 600 * 1000 < time;
 
-  if (inp_token.timestamp.end - 600 * 1000 < time) {
-    const refreshed = await refreshAccessToken(inp_token.refresh_token);
-
-    if (refreshed === null) {
-      return null;
-    }
-
-    if (refreshed.error) {
-      return null;
-    }
-
-    // Spotify omits refresh_token when it hasn't rotated — preserve the old one
-    if (!refreshed.refresh_token) {
-      refreshed.refresh_token = inp_token.refresh_token;
-    }
-
-    return refreshed;
-  } else {
+  if (!needsRefresh) {
     return inp_token;
   }
+
+  if (!inp_token.refresh_token) {
+    return inp_token.timestamp?.end && inp_token.timestamp.end > time
+      ? inp_token
+      : null;
+  }
+
+  const refreshed = await refreshAccessToken(inp_token.refresh_token);
+
+  if (refreshed === null || refreshed.error) {
+    return inp_token.timestamp?.end && inp_token.timestamp.end > time
+      ? inp_token
+      : null;
+  }
+
+  if (!refreshed.refresh_token) {
+    refreshed.refresh_token = inp_token.refresh_token;
+  }
+
+  return refreshed;
 };
 
 const init = async (ws: ServerWebSocket) => {
   const polling = setInterval(async () => {
-    const conn = activeConnections.get(ws);
-    if (!conn || !conn.token) {
-      console.log("token is null or connection is missing in polling");
-      clearInterval(polling);
-      return;
-    }
-
-    const newDate = new Date().getTime();
-    const refreshedToken = await refresh_token(conn.token, newDate);
-
-    if (refreshedToken === null) {
-      ws.publish(systemTopic, "error: token refresh failed");
-      clearInterval(polling);
-      activeConnections.delete(ws);
-      console.log("token is null in polling after refresh failure");
-      return;
-    }
-
-    if (refreshedToken.access_token !== conn.token.access_token) {
-      conn.token = refreshedToken;
-      ws.publish(systemTopic, "spt: token refreshed");
-      ws.send(`spt: NEW TOKEN ${JSON.stringify(refreshedToken)}`);
-    }
-
-    const data = await queueFetcher(conn.token);
-
-    if (data === null) {
-      ws.publish(systemTopic, "spt: fetch error (queue)");
-    } else {
-      if (stockData !== null) {
-        if (data.currently_playing === null) {
-          console.log("nothing playing rn");
-          return;
-        }
-
-        if (
-          stockData.currently_playing === null ||
-          stockData.currently_playing.id !== data.currently_playing.id ||
-          stockData.queue[0].id !== data.queue[0].id
-        ) {
-          stockData = data;
-          ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
-        }
-      } else {
-        stockData = data;
-        server?.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`) ??
-          ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
+    try {
+      const conn = activeConnections.get(ws);
+      if (!conn || !conn.token) {
+        clearInterval(polling);
+        return;
       }
-    }
 
-    ws.publish(systemTopic, `spt: heartbeat`);
+      const newDate = new Date().getTime();
+      const refreshedToken = await refresh_token(conn.token, newDate);
+
+      if (refreshedToken === null) {
+        ws.publish(systemTopic, "error: token refresh failed");
+        clearInterval(polling);
+        activeConnections.delete(ws);
+        console.log("token is null in polling after refresh failure");
+        return;
+      }
+
+      if (refreshedToken.access_token !== conn.token.access_token) {
+        conn.token = refreshedToken;
+        ws.publish(systemTopic, "spt: token refreshed");
+        ws.send(`spt: NEW TOKEN ${JSON.stringify(refreshedToken)}`);
+      }
+
+      const data = await queueFetcher(conn.token);
+
+      if (data === null) {
+        ws.publish(systemTopic, "spt: fetch error (queue)");
+      } else {
+        // ponytail: safe comparison handling null playback or empty queue without throwing
+        if (stockData !== null) {
+          const prevPlayingId = stockData.currently_playing?.id ?? null;
+          const currPlayingId = data.currently_playing?.id ?? null;
+          const prevFirstId = stockData.queue?.[0]?.id ?? null;
+          const currFirstId = data.queue?.[0]?.id ?? null;
+          const prevLen = stockData.queue?.length ?? 0;
+          const currLen = data.queue?.length ?? 0;
+
+          const hasChanged =
+            prevPlayingId !== currPlayingId ||
+            prevFirstId !== currFirstId ||
+            prevLen !== currLen;
+
+          if (hasChanged) {
+            stockData = data;
+            server?.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`) ??
+              ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
+          }
+        } else {
+          stockData = data;
+          server?.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`) ??
+            ws.publish(systemTopic, `spt: QUEUE ${JSON.stringify(data)}`);
+        }
+      }
+
+      ws.publish(systemTopic, `spt: heartbeat`);
+    } catch (err) {
+      console.error("[Spotify] Polling error:", err);
+    }
   }, 2500);
 
   const conn = activeConnections.get(ws);
@@ -115,28 +127,28 @@ export const spotifyHandler = async (msg: string, ws: ServerWebSocket) => {
   const now = new Date().getTime();
 
   if (msg.startsWith("spt: SET TOKEN ")) {
-    let parsed_token = JSON.parse(msg.replace("spt: SET TOKEN ", ""));
+    let parsed_token: ISpotifyToken | null = null;
+    try {
+      parsed_token = JSON.parse(msg.replace("spt: SET TOKEN ", ""));
+    } catch {
+      ws.publish(systemTopic, "error: invalid token format");
+      return;
+    }
 
-    if (parsed_token === null) {
+    if (!parsed_token || (!parsed_token.access_token && !parsed_token.refresh_token)) {
       ws.publish(systemTopic, "error: no token");
       return;
     }
 
-    if (!parsed_token.timestamp?.end || parsed_token.timestamp.end < now) {
-      ws.publish(systemTopic, "error: invalid token");
-      return;
-    }
-
-    // Refresh if needed
+    // Refresh if needed or expired (ponytail: restore session seamlessly)
     const refreshedToken = await refresh_token(parsed_token, now);
     if (refreshedToken === null) {
       ws.publish(systemTopic, "error: token refresh failed");
       return;
-    } else if (refreshedToken !== parsed_token) {
+    } else if (refreshedToken.access_token !== parsed_token.access_token) {
       ws.publish(systemTopic, "spt: token refreshed");
       const tokenContext = `spt: NEW TOKEN ${JSON.stringify(refreshedToken)}`;
 
-      // ws.publish(systemTopic, tokenContext);
       ws.send(tokenContext);
     }
 
@@ -153,6 +165,11 @@ export const spotifyHandler = async (msg: string, ws: ServerWebSocket) => {
 
     // Initialize polling
     await init(ws);
+  } else if (msg === "spt: logout") {
+    // ponytail: handle explicit logout command
+    spotifyCleanup(ws);
+    ws.publish(systemTopic, "spt: logged out");
+    ws.send("spt: logged out");
   } else if (msg.startsWith("spt: ")) {
     const conn = activeConnections.get(ws);
 

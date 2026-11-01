@@ -5,10 +5,12 @@ import { ServerWebSocket } from "bun";
 import { Greeting } from "./modules/greet";
 import { spotifyHandler, spotifyCleanup } from "./modules/spotify";
 import { tiktokHandler } from "./modules/tiktok";
+import { configWsHandler, broadcastConfigUpdated } from "./modules/config";
 import { expansionSlot } from "../../modules/expansion";
 
 const ws = new Hono();
 
+export { broadcastConfigUpdated };
 export const systemTopic = "dethzon:system";
 
 ws.get(
@@ -31,6 +33,8 @@ ws.get(
           await spotifyHandler(msg, rawWS);
         } else if (msg.startsWith("tt: ")) {
           await tiktokHandler(msg, rawWS);
+        } else if (msg.startsWith("config: ")) {
+          await configWsHandler(msg, rawWS);
         } else {
           const handled = await expansionSlot.dispatchWsMessage(msg, rawWS);
           if (!handled) {

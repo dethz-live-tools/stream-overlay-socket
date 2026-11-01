@@ -7,6 +7,7 @@ import { staticListingPage } from "./staticPage";
 import { mainHandler } from "./static";
 import { saveConfig } from "../modules/config";
 import { expansionSlot } from "../modules/expansion";
+import { broadcastConfigUpdated } from "./ws";
 
 const routes = new Hono();
 
@@ -41,9 +42,7 @@ routes.post("/config", async (c) => {
   }
 
   saveConfig(updates);
-  try {
-    expansionSlot.reloadConfig();
-  } catch {}
+  broadcastConfigUpdated("web-form");
 
   if (c.req.header("accept")?.includes("application/json")) {
     return c.json({ status: 1, message: "Configuration saved successfully" });

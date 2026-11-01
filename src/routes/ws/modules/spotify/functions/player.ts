@@ -8,31 +8,40 @@ export const playerHandler = async (
   token: string,
   ws: ServerWebSocket,
 ) => {
-  const sendState = state.replace("spt: player -- ", "");
-  var controllerResp = null;
+  try {
+    const sendState = state.replace("spt: player -- ", "");
+    var controllerResp = null;
 
-  if (sendState.startsWith("play:")) {
-    const device_id = sendState.replace("play: ", "");
-    controllerResp = await spotifyController(
-      "play",
-      token,
-      undefined,
-      device_id,
-    );
-  } else {
-    controllerResp = await spotifyController(sendState, token);
-  }
+    if (sendState.startsWith("play:")) {
+      const device_id = sendState.replace("play: ", "");
+      controllerResp = await spotifyController(
+        "play",
+        token,
+        undefined,
+        device_id,
+      );
+    } else {
+      controllerResp = await spotifyController(sendState, token);
+    }
 
-  if (controllerResp === null) {
-    ws.send("spt: error -- error occurred");
-    ws.publish(systemTopic, "spt: error -- error occurred");
-  } else {
-    if (controllerResp !== "") {
+    if (controllerResp === null) {
       if (sendState === "player") {
-        ws.send("spt: PLAYER DATA -- " + JSON.stringify(controllerResp));
+        // ponytail: when nothing is playing, send null player data to signify idle playback
+        ws.send("spt: PLAYER DATA -- null");
       } else {
-        console.log(controllerResp);
+        ws.send("spt: error -- error occurred");
+        ws.publish(systemTopic, "spt: error -- error occurred");
+      }
+    } else {
+      if (controllerResp !== "") {
+        if (sendState === "player") {
+          ws.send("spt: PLAYER DATA -- " + JSON.stringify(controllerResp));
+        } else {
+          console.log(controllerResp);
+        }
       }
     }
+  } catch (err) {
+    console.error("[Spotify] playerHandler error:", err);
   }
 };

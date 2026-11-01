@@ -1,10 +1,10 @@
 import * as config from "../../modules/config";
 
-const client_id = config.SPOTIFY_CLIENT_ID || "";
-// const redirect_uri = config.SPOTIFY_REDIRECT_URI || "";
-const redirect_uri = "http://127.0.0.1:3000/spotify/callback/";
-
 export const spotifyOAuth = (state: string) => {
+  // ponytail: read config dynamically
+  const clientId = config.SPOTIFY_CLIENT_ID || config.getConfig().SPOTIFY_CLIENT_ID || "";
+  const redirectUri = config.SPOTIFY_REDIRECT_URI || config.getConfig().SPOTIFY_REDIRECT_URI || "http://127.0.0.1:3000/spotify/callback/";
+
   const scopedSlots = [
     "user-read-private",
     "user-read-email",
@@ -15,9 +15,9 @@ export const spotifyOAuth = (state: string) => {
 
   const paramsObj = {
     response_type: "code",
-    client_id: client_id,
-    redirect_uri: redirect_uri,
-    scope: scopedSlots.join("%20"),
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    scope: scopedSlots.join(" "),
     show_dialog: "true",
     state: state,
   };

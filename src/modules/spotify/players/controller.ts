@@ -73,7 +73,14 @@ export const spotifyController = async (
       "player",
     )) as ISpotifyPlayer;
 
-    if (device_id !== undefined) {
+    if (!player || !player.device) {
+      if (device_id !== undefined) {
+        main_id = device_id;
+      } else {
+        console.log("no active player/device");
+        return null;
+      }
+    } else if (device_id !== undefined) {
       main_id = device_id;
     } else {
       if (player.device.id === null || player.device.id === undefined) {

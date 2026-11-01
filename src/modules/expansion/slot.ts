@@ -8,7 +8,9 @@ import type {
   ApiModuleFactory,
   ExpansionContext,
   LoadedApiModule,
+  ModuleConfigSchema,
 } from "./types";
+import { saveConfig } from "../config";
 
 export const DEFAULT_SYSTEM_TOPIC = "dethzon:system";
 
@@ -102,6 +104,12 @@ export interface DiscoveredModuleFolder {
   version?: string;
   description?: string;
   enabled?: boolean;
+  route?: string;
+  routePath?: string;
+  config?: ModuleConfigSchema;
+  configSchema?: ModuleConfigSchema;
+  configScript?: string;
+  configUi?: string;
 }
 
 /**
@@ -125,12 +133,29 @@ export function listDiscoveredModuleFolders(
       }
       const fullPath = path.join(resolvedDir, entry.name);
       const meta = readExtensionMeta(fullPath);
+      const folderName = entry.name;
+      const modName = meta?.name || folderName;
+      const globalConfig = loadConfig();
+      const configEnabled =
+        globalConfig.expansion?.[folderName]?.enabled ??
+        globalConfig.expansion?.[modName]?.enabled;
+      const isEnabled =
+        configEnabled !== undefined
+          ? Boolean(configEnabled)
+          : (meta?.enabled ?? true);
+
       result.push({
         folderName: entry.name,
-        name: meta?.name || entry.name,
+        name: modName,
         version: meta?.version,
         description: meta?.description,
-        enabled: meta?.enabled ?? true,
+        enabled: isEnabled,
+        route: meta?.route || meta?.routePath,
+        routePath: meta?.routePath || meta?.route,
+        config: meta?.config || meta?.configSchema,
+        configSchema: meta?.configSchema || meta?.config,
+        configScript: meta?.configScript,
+        configUi: meta?.configUi,
       });
     }
     return result;
@@ -406,6 +431,157 @@ export class ApiExpansionSlot {
   }
 
   /**
+   * Check if an expansion module is enabled in configuration or metadata
+   */
+  public isEnabled(name: string): boolean {
+    const norm = name.trim().toLowerCase();
+    const folder = findModuleFolder(norm) || norm;
+    const globalCfg = loadConfig();
+    const cfgEnabled =
+      globalCfg.expansion?.[folder]?.enabled ??
+      globalCfg.expansion?.[norm]?.enabled;
+
+    if (cfgEnabled !== undefined) {
+      return Boolean(cfgEnabled);
+    }
+
+    const meta = readExtensionMeta(path.resolve("modules", folder));
+    return meta?.enabled ?? true;
+  }
+
+  /**
+   * Turn an expansion module on or off
+   */
+  public async setEnabled(name: string, enabled: boolean): Promise<boolean> {
+    const norm = name.trim().toLowerCase();
+    const folder = findModuleFolder(norm) || norm;
+    const globalCfg = loadConfig();
+
+    const exp = { ...(globalCfg.expansion || {}) };
+    exp[folder] = { ...(exp[folder] || {}), enabled };
+    saveConfig({ expansion: exp });
+
+    if (!enabled) {
+      await this.unregister(norm);
+      await this.unregister(folder);
+    } else {
+      await this.loadModuleFromFolder(folder);
+    }
+
+    return enabled;
+  }
+
+  /**
+   * Toggle expansion module on / off
+   */
+  public async toggle(name: string): Promise<boolean> {
+    const current = this.isEnabled(name);
+    return await this.setEnabled(name, !current);
+  }
+
+  /**
+   * Load a single module from its folder name or path
+   */
+  public async loadModuleFromFolder(folderName: string, baseDir = "modules"): Promise<boolean> {
+    const fullPath = path.isAbsolute(folderName)
+      ? folderName
+      : path.resolve(baseDir, folderName);
+
+    if (!fs.existsSync(fullPath)) return false;
+
+    const extensionMeta = readExtensionMeta(fullPath);
+    const candidates = [
+      path.join(fullPath, "index.ts"),
+      path.join(fullPath, "index.js"),
+      path.join(fullPath, "module.ts"),
+      path.join(fullPath, "module.js"),
+    ];
+
+    let entryPoint: string | null = null;
+    for (const cand of candidates) {
+      if (fs.existsSync(cand)) {
+        entryPoint = cand;
+        break;
+      }
+    }
+
+    if (!entryPoint) {
+      const pkgJson = path.join(fullPath, "package.json");
+      if (fs.existsSync(pkgJson)) {
+        try {
+          const parsed = JSON.parse(fs.readFileSync(pkgJson, "utf-8"));
+          if (parsed.main && fs.existsSync(path.join(fullPath, parsed.main))) {
+            entryPoint = path.join(fullPath, parsed.main);
+          }
+        } catch {}
+      }
+    }
+
+    if (!entryPoint) return false;
+
+    try {
+      const imported = await import(entryPoint);
+      let modCandidate = imported.default || imported.module || imported;
+
+      const baseName =
+        extensionMeta?.name || path.basename(fullPath).replace(/\.(ts|js)$/, "");
+      const moduleConfig = getModuleConfig(baseName, fullPath);
+      const moduleContext: ExpansionContext = {
+        ...this.context,
+        config: moduleConfig,
+      };
+
+      if (typeof modCandidate === "function" && !isApiModule(modCandidate)) {
+        try {
+          const produced = await modCandidate(moduleConfig, moduleContext);
+          if (isApiModule(produced)) {
+            modCandidate = produced;
+          }
+        } catch {}
+      }
+
+      if (isApiModule(modCandidate)) {
+        if (extensionMeta) {
+          modCandidate.meta = {
+            ...extensionMeta,
+            ...modCandidate.meta,
+          };
+          if (extensionMeta.routePath && !modCandidate.routePath) {
+            modCandidate.routePath = extensionMeta.routePath;
+          }
+          if (extensionMeta.wsPrefix && !modCandidate.wsPrefix) {
+            modCandidate.wsPrefix = extensionMeta.wsPrefix;
+          }
+        }
+        await this.register(modCandidate, entryPoint);
+        return true;
+      } else if (
+        modCandidate instanceof Hono ||
+        typeof modCandidate === "function"
+      ) {
+        const wrapped: ApiModule = {
+          meta: {
+            name: baseName,
+            version: extensionMeta?.version || "1.0.0",
+            description:
+              extensionMeta?.description || `Auto-loaded module from ${path.basename(fullPath)}`,
+            author: extensionMeta?.author || "",
+            tags: extensionMeta?.tags || [],
+          },
+          routePath: extensionMeta?.routePath || `/${baseName}`,
+          wsPrefix: extensionMeta?.wsPrefix,
+          router: modCandidate,
+        };
+        await this.register(wrapped, entryPoint);
+        return true;
+      }
+    } catch (err) {
+      console.error(`[ExpansionSlot] Error loading module from ${fullPath}:`, err);
+    }
+    return false;
+  }
+
+  /**
    * Auto-discover and load modules from a directory (default: ./modules)
    */
   public async loadFromDirectory(dir = "modules"): Promise<number> {
@@ -427,122 +603,34 @@ export class ApiExpansionSlot {
       if (entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
 
       const fullPath = path.join(resolvedDir, entry.name);
-      let entryPoint: string | null = null;
-      let extensionMeta: any = null;
-
       if (entry.isDirectory()) {
-        // Read extensions.json metadata before doing anything
-        extensionMeta = readExtensionMeta(fullPath);
+        const extensionMeta = readExtensionMeta(fullPath);
+        const folderName = entry.name;
+        const modName = extensionMeta?.name || folderName;
+        const globalCfg = loadConfig();
+        const cfgEnabled =
+          globalCfg.expansion?.[folderName]?.enabled ??
+          globalCfg.expansion?.[modName]?.enabled;
 
-        // If explicitly disabled in extensions.json, skip module
-        if (extensionMeta && extensionMeta.enabled === false) {
+        // Skip if disabled in config.json or extensions.json
+        if (
+          cfgEnabled === false ||
+          (cfgEnabled === undefined && extensionMeta && extensionMeta.enabled === false)
+        ) {
           console.log(
-            `[ExpansionSlot] Skipping disabled module "${extensionMeta.name || entry.name}" (extensions.json)`
+            `[ExpansionSlot] Skipping disabled module "${modName}"`
           );
           continue;
         }
 
-        const candidates = [
-          path.join(fullPath, "index.ts"),
-          path.join(fullPath, "index.js"),
-          path.join(fullPath, "module.ts"),
-          path.join(fullPath, "module.js"),
-        ];
-
-        for (const cand of candidates) {
-          if (fs.existsSync(cand)) {
-            entryPoint = cand;
-            break;
-          }
-        }
-
-        if (!entryPoint) {
-          const pkgJson = path.join(fullPath, "package.json");
-          if (fs.existsSync(pkgJson)) {
-            try {
-              const parsed = JSON.parse(fs.readFileSync(pkgJson, "utf-8"));
-              if (parsed.main && fs.existsSync(path.join(fullPath, parsed.main))) {
-                entryPoint = path.join(fullPath, parsed.main);
-              }
-            } catch {
-              // ignore
-            }
-          }
-        }
+        const loaded = await this.loadModuleFromFolder(entry.name, resolvedDir);
+        if (loaded) count++;
       } else if (
         entry.isFile() &&
         (entry.name.endsWith(".ts") || entry.name.endsWith(".js"))
       ) {
-        entryPoint = fullPath;
-      }
-
-      if (entryPoint) {
-        try {
-          const imported = await import(entryPoint);
-          let modCandidate = imported.default || imported.module || imported;
-
-          const baseName =
-            extensionMeta?.name || entry.name.replace(/\.(ts|js)$/, "");
-          const moduleConfig = getModuleConfig(
-            baseName,
-            entry.isDirectory() ? fullPath : undefined,
-          );
-          const moduleContext: ExpansionContext = {
-            ...this.context,
-            config: moduleConfig,
-          };
-
-          // ponytail: allow outside modules to export factory function receiving (config, context)
-          if (typeof modCandidate === "function" && !isApiModule(modCandidate)) {
-            try {
-              const produced = await modCandidate(moduleConfig, moduleContext);
-              if (isApiModule(produced)) {
-                modCandidate = produced;
-              }
-            } catch {
-              // continue to standard router wrapping
-            }
-          }
-
-          if (isApiModule(modCandidate)) {
-            if (extensionMeta) {
-              modCandidate.meta = {
-                ...extensionMeta,
-                ...modCandidate.meta,
-              };
-              if (extensionMeta.routePath && !modCandidate.routePath) {
-                modCandidate.routePath = extensionMeta.routePath;
-              }
-              if (extensionMeta.wsPrefix && !modCandidate.wsPrefix) {
-                modCandidate.wsPrefix = extensionMeta.wsPrefix;
-              }
-            }
-            await this.register(modCandidate, entryPoint);
-            count++;
-          } else if (
-            modCandidate instanceof Hono ||
-            typeof modCandidate === "function"
-          ) {
-            const baseName = extensionMeta?.name || entry.name.replace(/\.(ts|js)$/, "");
-            const wrapped: ApiModule = {
-              meta: {
-                name: baseName,
-                version: extensionMeta?.version || "1.0.0",
-                description:
-                  extensionMeta?.description || `Auto-loaded module from ${entry.name}`,
-                author: extensionMeta?.author || "",
-                tags: extensionMeta?.tags || [],
-              },
-              routePath: extensionMeta?.routePath || `/${baseName}`,
-              wsPrefix: extensionMeta?.wsPrefix,
-              router: modCandidate,
-            };
-            await this.register(wrapped, entryPoint);
-            count++;
-          }
-        } catch (err) {
-          console.error(`[ExpansionSlot] Failed to load module at "${entryPoint}":`, err);
-        }
+        const loaded = await this.loadModuleFromFolder(entry.name, resolvedDir);
+        if (loaded) count++;
       }
     }
 

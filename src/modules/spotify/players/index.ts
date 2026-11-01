@@ -38,17 +38,33 @@ export const basedController = async (
     body: body?.type === "body" ? body.body : undefined,
   });
 
-  // const json_body = await resp.json();
+  // ponytail: handle 204 No Content or empty bodies safely without throwing SyntaxError
+  if (resp.status === 204 || resp.status === 205) {
+    return null;
+  }
+
+  const text = await resp.text();
+  if (!text || text.trim() === "") {
+    return null;
+  }
 
   if (state === "player") {
-    return await resp.json();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
   } else if (state === "queue") {
     if (method === "POST") {
-      return await resp.text();
+      return text;
     } else {
-      return await resp.json();
+      try {
+        return JSON.parse(text);
+      } catch {
+        return null;
+      }
     }
   } else {
-    return await resp.text();
+    return text;
   }
 };

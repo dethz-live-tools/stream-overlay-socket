@@ -1,16 +1,21 @@
 import * as config from "../../modules/config";
 
-const client_id = config.SPOTIFY_CLIENT_ID;
-const client_secret = config.SPOTIFY_CLIENT_SECRET;
-
 export const refreshAccessToken = async (refresh_token: string) => {
+  // ponytail: read config dynamically to avoid stale credentials
+  const clientId = config.SPOTIFY_CLIENT_ID || config.getConfig().SPOTIFY_CLIENT_ID || "";
+  const clientSecret = config.SPOTIFY_CLIENT_SECRET || config.getConfig().SPOTIFY_CLIENT_SECRET || "";
+
+  if (!refresh_token) {
+    return { error: "missing_refresh_token", error_description: "No refresh token provided" };
+  }
+
   const paramsObj = {
     grant_type: "refresh_token",
     refresh_token: refresh_token,
-    client_id: client_id || "",
+    client_id: clientId,
   };
 
-  const basicAuth = Buffer.from(`${client_id}:${client_secret}`).toString(
+  const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString(
     "base64",
   );
 
@@ -24,6 +29,7 @@ export const refreshAccessToken = async (refresh_token: string) => {
     },
     body: new URLSearchParams(paramsObj),
   };
+
   const body = await fetch(url, payload);
   const response = await body.json();
 
@@ -31,12 +37,17 @@ export const refreshAccessToken = async (refresh_token: string) => {
     return response;
   }
 
-  // Stamp timestamp so the polling loop can track expiry
+  // Stamp timestamp so polling and clients track expiry
   const now = new Date().getTime();
   response.timestamp = {
     start: now,
-    end: now + response.expires_in * 1000,
+    end: now + (response.expires_in || 3600) * 1000,
   };
+
+  // Preserve refresh token if Spotify did not rotate it
+  if (!response.refresh_token) {
+    response.refresh_token = refresh_token;
+  }
 
   return response;
 };

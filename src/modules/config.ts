@@ -104,6 +104,20 @@ export function getConfig(): AppConfig {
 }
 
 /**
+ * Reload configuration from disk and synchronize in-memory variables.
+ */
+export function reloadConfig(customConfigPath?: string): AppConfig {
+  const configPath = customConfigPath ?? resolveConfigPath();
+  const loaded = loadConfig(configPath);
+  Object.assign(currentConfig, loaded);
+  TEST_VALUE = currentConfig.TEST_VALUE;
+  SPOTIFY_CLIENT_ID = currentConfig.SPOTIFY_CLIENT_ID;
+  SPOTIFY_CLIENT_SECRET = currentConfig.SPOTIFY_CLIENT_SECRET;
+  SPOTIFY_REDIRECT_URI = currentConfig.SPOTIFY_REDIRECT_URI;
+  return currentConfig;
+}
+
+/**
  * Save updated configuration to config.json and reload in-memory exports.
  */
 export function saveConfig(
@@ -120,13 +134,7 @@ export function saveConfig(
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, JSON.stringify(merged, null, 2) + "\n", "utf-8");
 
-  Object.assign(currentConfig, merged);
-  TEST_VALUE = currentConfig.TEST_VALUE;
-  SPOTIFY_CLIENT_ID = currentConfig.SPOTIFY_CLIENT_ID;
-  SPOTIFY_CLIENT_SECRET = currentConfig.SPOTIFY_CLIENT_SECRET;
-  SPOTIFY_REDIRECT_URI = currentConfig.SPOTIFY_REDIRECT_URI;
-
-  return merged;
+  return reloadConfig(configPath);
 }
 
 export default currentConfig;

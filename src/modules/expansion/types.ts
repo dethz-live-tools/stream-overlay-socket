@@ -1,6 +1,26 @@
 import { Hono } from "hono";
 import type { ServerWebSocket } from "bun";
 
+export interface ModuleConfigField {
+  key: string;
+  label?: string;
+  type?: "text" | "password" | "number" | "boolean" | "select" | "textarea" | "json";
+  options?: Array<string | { label: string; value: any }>;
+  placeholder?: string;
+  description?: string;
+  default?: any;
+  required?: boolean;
+}
+
+export interface ModuleConfigSchema {
+  title?: string;
+  description?: string;
+  icon?: string;
+  fields?: ModuleConfigField[];
+  script?: string;
+  [key: string]: any;
+}
+
 export interface ApiModuleMeta {
   name: string;
   version?: string;
@@ -8,6 +28,12 @@ export interface ApiModuleMeta {
   author?: string;
   tags?: string[];
   enabled?: boolean;
+  routePath?: string;
+  wsPrefix?: string | string[];
+  config?: ModuleConfigSchema;
+  configSchema?: ModuleConfigSchema;
+  configScript?: string;
+  configUi?: string;
 }
 
 export interface ExpansionContext {

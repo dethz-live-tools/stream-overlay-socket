@@ -1,6 +1,7 @@
 import { Hono } from "hono";
-import { getConfig, resolveConfigPath, saveConfig } from "../../modules/config";
+import { getConfig, resolveConfigPath, saveConfig, reloadConfig } from "../../modules/config";
 import { expansionSlot, listDiscoveredModuleFolders } from "../../modules/expansion";
+import { broadcastConfigUpdated } from "../ws";
 
 const configApi = new Hono();
 
@@ -32,13 +33,7 @@ configApi.post("/", async (c) => {
     }
 
     const saved = saveConfig(updates);
-
-    // Refresh expansion slot cache so dynamic modules receive updated configuration
-    try {
-      expansionSlot.reloadConfig();
-    } catch {
-      // Ignore if expansion slot reloadConfig not implemented
-    }
+    broadcastConfigUpdated("api-config");
 
     return c.json({
       status: 1,
@@ -84,10 +79,7 @@ configApi.post("/core", async (c) => {
     const current = getConfig();
     const toSave = { ...updates, expansion: current.expansion };
     const saved = saveConfig(toSave);
-
-    try {
-      expansionSlot.reloadConfig();
-    } catch {}
+    broadcastConfigUpdated("api-config-core");
 
     const { expansion, ...savedCore } = saved;
     return c.json({
@@ -145,8 +137,12 @@ const handlePostModuleConfig = async (c: any) => {
     const saved = saveConfig({ expansion: currentExp });
 
     try {
-      expansionSlot.reloadConfig();
+      if (typeof modVars.enabled === "boolean") {
+        await expansionSlot.setEnabled(mod, modVars.enabled);
+      }
     } catch {}
+
+    broadcastConfigUpdated(`module-${mod}`);
 
     return c.json({
       status: 1,
@@ -164,6 +160,16 @@ const handlePostModuleConfig = async (c: any) => {
     );
   }
 };
+
+configApi.post("/expansion/:module/toggle", async (c) => {
+  const mod = c.req.param("module");
+  try {
+    const status = await expansionSlot.toggle(mod);
+    return c.json({ status: 1, module: mod, enabled: status });
+  } catch (err: any) {
+    return c.json({ status: 0, message: err?.message || "Failed to toggle module" }, 500);
+  }
+});
 
 configApi.get("/expansion/:module", handleGetModuleConfig);
 configApi.post("/expansion/:module", handlePostModuleConfig);
